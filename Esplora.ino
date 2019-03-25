@@ -1,10 +1,20 @@
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7735.h>
+//#define ADA
+
+#include <Esplora.h>  // Try to use hardware but if not (buttons) use Esplora library function
 #include <SPI.h>
 #include <EEPROM.h>
-#include <Esplora.h>  // Try to use hardware but if not (buttons) use Esplora library function
 
-//#define DEBUG
+#ifdef ADA
+#include <Adafruit_GFX.h>    // Core graphics library
+#include <Adafruit_ST7735.h>
+#else
+#include <TFT.h>
+#endif
+
+
+
+#define DEBUG
+#define DECAL 3
 #define SCALE 8
 
 typedef uint16_t CRGB;
@@ -14,16 +24,23 @@ typedef uint16_t CRGB;
 #define sclk 15
 
 //SCREEN
+
 #define s_width 128
 #define s_height 149
+
+#ifdef ADA
 #define cs 7  // Esplora uses display chip select on D7
 #define dc 0  // Esplora uses LCD DC on D0
 #define rst 1 // Esplora uses display reset on D1
 Adafruit_ST7735 tft = Adafruit_ST7735(cs, dc, mosi, sclk, rst);  // define tft display (use Adafruit library)
+#endif
+
 long lastMillis;
 boolean monitor = false;
 
-#define RGB(r, g, b) (((r&0xF8)<<8)|((g&0xFC)<<3)|(b>>3))
+//#define RGB(r, g, b) (((r&0xF8)<<8)|((g&0xFC)<<3)|(b>>3))
+#define RGB(r, g, b) (((b&0xF8)<<8)|((g&0xFC)<<3)|(r>>3))
+
 //uint16_t color565(uint8_t r, uint8_t g, uint8_t b) { return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3); }
 #define BLACK   0x0000
 #define BLUE    0xF800
@@ -87,11 +104,10 @@ void readInput(){
   curControl = BTN_NONE;
 
   if ( Esplora.readJoystickSwitch() ==0 )
-    curControl += BTN_EXIT;
-//    curControl += BTN_START;
+    curControl += BTN_START;
   
-//  if (!digitalRead(E_pin))
-//    curControl += BTN_EXIT;
+  if ( Esplora.readSlider() < 512 )
+    curControl += BTN_EXIT;
     
   if (Esplora.readButton(SWITCH_LEFT) == LOW)
     curControl += BTN_LEFT;
@@ -104,45 +120,86 @@ void readInput(){
     curControl += BTN_DOWN;
 }        
 
-void setPixel(int n, unsigned long color){
-//  leds[n] = color;
+void setPixel(int n, uint16_t col){
+  leds[n] = col;
 //  tft.drawPixel(n%s_width, n/s_width, color );
-  tft.fillRect(n%s_width*SCALE, n/s_width*SCALE, SCALE, SCALE, color );
+
+#ifdef ADA
+  tft.fillRect(n%s_width<<DECAL, n/s_width<<DECAL, SCALE, SCALE, col );
+#else
+//  EsploraTFT.stroke(col);
+  EsploraTFT.fill(col);
+  EsploraTFT.rect(n%s_width<<DECAL, n/s_width<<DECAL, SCALE, SCALE);
+#endif
 }
 
 void setPixelRGB(int n, int r,int g, int b){
-//  leds[n] = RGB(r,g,b);
+  leds[n] = RGB(r,g,b);
 //  tft.drawPixel(n%s_width, n/s_width, RGB(r,g,b) );
-  tft.fillRect(n%s_width*SCALE, n/s_width*SCALE, SCALE, SCALE, RGB(r,g,b) );
+#ifdef ADA
+  tft.fillRect(n%s_width<<DECAL, n/s_width<<DECAL, SCALE, SCALE, RGB(r,g,b) );
+#else
+//  EsploraTFT.stroke(r,g,b);
+  EsploraTFT.fill(r,g,b);
+  EsploraTFT.rect(n%s_width<<DECAL, n/s_width<<DECAL, SCALE, SCALE);
+#endif
 }
 
 void setTablePixelrgb(int x, int y, CRGB col){
-//  leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = col ;
+  leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = col ;
 //  tft.drawPixel(x, y, col);
-  tft.fillRect(x*SCALE, y*SCALE, SCALE, SCALE, col );
+#ifdef ADA
+  tft.fillRect(x<<DECAL, y<<DECAL, SCALE, SCALE, col );
+#else
+//  EsploraTFT.stroke(col);
+  EsploraTFT.fill(col);
+  EsploraTFT.rect(x<<DECAL, y<<DECAL, SCALE, SCALE);
+#endif
 }
 
 void setTablePixelRGB(int x, int y, int r,int g, int b){
- // leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = col ;
+  leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = RGB(r,g,b) ;
 //  tft.drawPixel(x, y, RGB(r,g,b));
-  tft.fillRect(x*SCALE, y*SCALE, SCALE, SCALE, RGB(r,g,b) );
+#ifdef ADA
+  tft.fillRect(x<<DECAL, y<<DECAL, SCALE, SCALE, RGB(r,g,b) );
+#else
+//  EsploraTFT.stroke(r,g,b);
+  EsploraTFT.fill(r,g,b);
+  EsploraTFT.rect(x<<DECAL, y<<DECAL, SCALE, SCALE);
+#endif  
 }
 
-void setTablePixelDouble(int x, int y, unsigned long col){
+void setTablePixelDouble(int x, int y, uint16_t col){
    setTablePixel( (x<<1), (y<<1), col);
    setTablePixel( (x<<1)+1, (y<<1), col);
    setTablePixel( (x<<1), (y<<1)+1, col);
    setTablePixel( (x<<1)+1, (y<<1)+1, col);
 }
 
-void setTablePixel(int x, int y, unsigned long color){
-//   leds [ (y * LONG_SIDE) + x] = (color) ; 
-//   tft.drawPixel(x, y, color);
- tft.fillRect(x*SCALE, y*SCALE, SCALE, SCALE, color);
- }
+void setTablePixel(int x, int y, uint16_t col){
+   leds [ (y * LONG_SIDE) + x] = (col) ; 
+//   tft.drawPixel(x, y, col);
+#ifdef ADA
+ tft.fillRect(x<<DECAL, y<<DECAL, SCALE, SCALE, col);
+#else
+//  EsploraTFT.stroke(col);
+  EsploraTFT.fill(col);
+  EsploraTFT.rect(x<<DECAL, y<<DECAL, SCALE, SCALE);
+#endif
+}
+
+uint16_t getPixel(int n){
+//return (EsploraTFT.readPixel( n%s_width<<DECAL, n/s_width<<DECAL )); 
+return (leds[n]);
+}
+
 
 void clearTablePixels(){
+#ifdef ADA  
   tft.fillScreen(BLACK);
+#else
+  EsploraTFT.fillScreen(BLACK);
+#endif
 /*
   for (int n=0; n<FIELD_WIDTH*FIELD_HEIGHT; n++){
     setPixel(n,0);
@@ -191,11 +248,16 @@ setTablePixel(1,3,CRGB(0x00FF00) );
 setTablePixel(2,3,CRGB(0x0000FF) );
 //   FastLED.show();
    delay(1000);
-for (int i =0xFF; i; i--)
+for (int i =0x7F; i; i--)
 {
-  setTablePixel(0,2,i<<16 );
-  setTablePixel(1,2,i<<8 );
-  setTablePixel(2,2,i );
+  setTablePixelDouble(0,4,RGB(i,0,0) ); //16
+  setTablePixelDouble(1,4,RGB(0,i,0) ); //8
+  setTablePixelDouble(2,4,RGB(0,0,i) );
+  setTablePixelDouble(3,4,RGB(i,0,i) );
+  setTablePixelDouble(4,4,RGB(0,i,i) );
+  setTablePixelDouble(5,4,RGB(i,i,0) );
+  setTablePixelDouble(6,4,RGB(i,i,i) );
+  
   unsigned long tmp=i<<16+i<<8+i;
   setTablePixel(3,2,tmp );  
   
@@ -203,18 +265,56 @@ for (int i =0xFF; i; i--)
   setTablePixelRGB(1,3,0,i,0 );
   setTablePixelRGB(2,3,0,0,i );
   setTablePixelRGB(3,3,i,i,i );
-  delay(20);
+  delay(25);
 }
 #endif
 }
 
+void dimLeds(float factor){
+  //Reduce brightness of all LEDs, typical factor is 0.97
+  for (int n=0; n<(FIELD_WIDTH*FIELD_HEIGHT); n++)
+  {
+    uint16_t curColor = getPixel(n);
+
+    //Derive the tree colors
+    byte  r = ( curColor >>11 );
+    byte  g = ((curColor & 0x003F)>>5);
+    byte  b = (curColor & 0x001F);
+    //Reduce brightness
+    r = r*factor;
+    g = g*factor;
+    b = b*factor;
+    //Pack into single variable again
+    curColor = RGB(r,g,b);
+    //Set led again
+    setPixel(n,curColor);  }
+}
+
+
 void fadeOut(){
 
-     //Fade out by swiping from left to right with ruler
+  int selection = 1;//random(3);
+
+  
+  switch(selection){
+    case 0:
+    case 1:
+    {
+      //Fade out by dimming all pixels
+      for (int i=0; i<100; i++){
+        dimLeds(0.97);
+        showPixels();
+        delay(20);
+      }
+      break;
+    }
+    case 2:
+    {
+      //Fade out by swiping from left to right with ruler
       const int ColumnDelay = 10;
       int curColumn = 0;
       for (int i=0; i<FIELD_WIDTH*ColumnDelay; i++){
-//        dimLeds(0.97);
+        dimLeds(0.97);
         if (i%ColumnDelay==0){
           //Draw vertical line
           for (int y=0;y<FIELD_HEIGHT;y++){
@@ -227,10 +327,13 @@ void fadeOut(){
       }
       //Sweep complete, keep dimming leds for short time
       for (int i=0; i<100; i++){
-//        dimLeds(0.9);
+        dimLeds(0.9);
         showPixels();
         delay(5);
       }
+      break;
+    }
+  }
 }
 
 
@@ -272,15 +375,18 @@ void displayLogo(){
 void setup() {
   // put your setup code here, to run once:
   // initialize a ST7735R TFT
+#ifdef ADA  
   tft.initR();
-  tft.setRotation(1);  // Set for landscape display on Esplora
+//  tft.setRotation(1);  // Set for landscape display on Esplora
   tft.setTextWrap(false); // Allow text to run off right edge
-
-
-  //Serial.begin(9600);
  // FillWorld();
-
   tft.fillScreen(BLACK);
+#else
+  EsploraTFT.begin();
+  EsploraTFT.background(0,0,0);
+  EsploraTFT.noStroke(); //(200,20,180);
+#endif
+  
   initPixels();
   delay(1000);
 //  testMatrix();
@@ -341,6 +447,9 @@ void initDP() {
 
 void displayImageDP(uint64_t image) 
 {
+//  EsploraTFT.stroke(RED);
+//  EsploraTFT.fill(RED);
+
   for (int y = 0; y < 5; y++) 
   {
     byte row = (image >> y * 8) & 0xFF;
@@ -448,6 +557,7 @@ void loop() {
 //Esplora.readJoystickSwitch()
 //Esplora.readButton(SWITCH_DOWN);
 
+/*
 void drawString(byte x, byte y, char *text, uint16_t color, bool wrap) { // replicate tft.drawString
   tft.setCursor(x,y);
   tft.setTextColor(color);
@@ -460,3 +570,26 @@ void drawChar(byte x, byte y, char text, uint16_t color) { // replicate tft.draw
   tft.setTextColor(color);
   tft.print(text);
 }
+*/
+/*
+  void     begin(uint16_t id = 0x9325);
+  void     drawPixel(int16_t x, int16_t y, uint16_t color);
+  void     drawFastHLine(int16_t x0, int16_t y0, int16_t w, uint16_t color);
+  void     drawFastVLine(int16_t x0, int16_t y0, int16_t h, uint16_t color);
+  void     fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c);
+  void     fillScreen(uint16_t color);
+  void     reset(void);
+  void     setRegisters8(uint8_t *ptr, uint8_t n);
+  void     setRegisters16(uint16_t *ptr, uint8_t n);
+  void     setRotation(uint8_t x);
+       // These methods are public in order for BMP examples to work:
+  void     setAddrWindow(int x1, int y1, int x2, int y2);
+  void     pushColors(uint16_t *data, uint8_t len, boolean first);
+
+  uint16_t color565(uint8_t r, uint8_t g, uint8_t b),
+           readPixel(int16_t x, int16_t y),
+           readID(void);
+  uint32_t readReg(uint8_t r);
+
+ * 
+ */
