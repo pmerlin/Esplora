@@ -4,8 +4,8 @@
 #include <EEPROM.h>
 #include <Esplora.h>  // Try to use hardware but if not (buttons) use Esplora library function
 
-#define DEBUG
-#define SCALE 3
+//#define DEBUG
+#define SCALE 8
 
 typedef uint16_t CRGB;
 // SPI pins for Esplora (Arduino Leonardo style numbering)
@@ -83,24 +83,49 @@ uint8_t nbPlayerDie ;
 boolean appRunning = false;
 
 
+void readInput(){
+  curControl = BTN_NONE;
+
+  if ( Esplora.readJoystickSwitch() ==0 )
+    curControl += BTN_EXIT;
+//    curControl += BTN_START;
+  
+//  if (!digitalRead(E_pin))
+//    curControl += BTN_EXIT;
+    
+  if (Esplora.readButton(SWITCH_LEFT) == LOW)
+    curControl += BTN_LEFT;
+  if (Esplora.readButton(SWITCH_UP) == LOW)
+    curControl += BTN_UP;
+    
+  if (Esplora.readButton(SWITCH_RIGHT) == LOW)
+    curControl += BTN_RIGHT;
+  if (Esplora.readButton(SWITCH_DOWN) == LOW)
+    curControl += BTN_DOWN;
+}        
+
 void setPixel(int n, unsigned long color){
-  leds[n] = color;
-  tft.drawPixel(n%s_width, n/s_width, color );
+//  leds[n] = color;
+//  tft.drawPixel(n%s_width, n/s_width, color );
+  tft.fillRect(n%s_width*SCALE, n/s_width*SCALE, SCALE, SCALE, color );
 }
 
 void setPixelRGB(int n, int r,int g, int b){
-  leds[n] = RGB(r,g,b);
-  tft.drawPixel(n%s_width, n/s_width, RGB(r,g,b) );
+//  leds[n] = RGB(r,g,b);
+//  tft.drawPixel(n%s_width, n/s_width, RGB(r,g,b) );
+  tft.fillRect(n%s_width*SCALE, n/s_width*SCALE, SCALE, SCALE, RGB(r,g,b) );
 }
 
 void setTablePixelrgb(int x, int y, CRGB col){
 //  leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = col ;
-  tft.drawPixel(x, y, col);
+//  tft.drawPixel(x, y, col);
+  tft.fillRect(x*SCALE, y*SCALE, SCALE, SCALE, col );
 }
 
 void setTablePixelRGB(int x, int y, int r,int g, int b){
  // leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = col ;
-  tft.drawPixel(x, y, RGB(r,g,b));
+//  tft.drawPixel(x, y, RGB(r,g,b));
+  tft.fillRect(x*SCALE, y*SCALE, SCALE, SCALE, RGB(r,g,b) );
 }
 
 void setTablePixelDouble(int x, int y, unsigned long col){
@@ -113,13 +138,16 @@ void setTablePixelDouble(int x, int y, unsigned long col){
 void setTablePixel(int x, int y, unsigned long color){
 //   leds [ (y * LONG_SIDE) + x] = (color) ; 
 //   tft.drawPixel(x, y, color);
-   tft.fillRect(x*4, y*4, 4, 4, color);
+ tft.fillRect(x*SCALE, y*SCALE, SCALE, SCALE, color);
  }
 
 void clearTablePixels(){
+  tft.fillScreen(BLACK);
+/*
   for (int n=0; n<FIELD_WIDTH*FIELD_HEIGHT; n++){
     setPixel(n,0);
   }
+*/
 }
 
 void showPixels(){
@@ -205,6 +233,42 @@ void fadeOut(){
       }
 }
 
+
+void displayLogo(){
+  CRGB ipal[9];
+  ipal[0] = RGB(0,0,0); 
+  ipal[1] = RGB(255,0,0); 
+  ipal[2] = RGB(0,255,0); 
+  ipal[3] = RGB(30,30,255); 
+  ipal[4] = RGB(100,220,220); 
+  ipal[5] = RGB(160,190,200); 
+  ipal[6] = RGB(100,220,250); 
+  ipal[7] = RGB(110,80,210); 
+  ipal[8] = RGB(210,190,200); 
+
+  const uint8_t ledtable[10][15] = {
+  {1,1,1,0,2,2,2,3,0,0,0,3,4,0,0},
+  {1,0,0,1,0,2,0,0,3,0,3,0,4,0,0},
+  {1,0,0,1,0,2,0,0,0,3,0,0,4,0,0},
+  {1,1,1,0,0,2,0,0,3,0,3,0,4,0,0},
+  {1,0,0,0,2,2,2,3,0,0,0,3,4,4,4},
+  {5,5,5,0,6,6,0,7,7,7,0,8,0,0,0},
+  {0,5,0,6,0,0,6,7,0,0,7,8,0,0,0},
+  {0,5,0,6,0,0,6,7,7,7,0,8,0,0,0},
+  {0,5,0,6,6,6,6,7,0,0,7,8,0,0,0},
+  {0,5,0,6,0,0,6,7,7,7,0,8,8,8,0}
+};
+
+  for (uint8_t y = 0; y < SHORT_SIDE; ++y) {
+    for (uint8_t x = 0; x < LONG_SIDE; ++x) {
+      uint8_t idx = ledtable[y][x];
+      setTablePixelrgb(x, y, ipal[idx]);
+    }
+  }
+  delay(2000);
+}
+
+
 void setup() {
   // put your setup code here, to run once:
   // initialize a ST7735R TFT
@@ -219,13 +283,148 @@ void setup() {
   tft.fillScreen(BLACK);
   initPixels();
   delay(1000);
-  testMatrix();
+//  testMatrix();
+  displayLogo();
   delay(1000);
 //  ScoreSetup();
 }
 
+//////////////////////////////////////////////
+
+uint8_t printmode=0;
+
+// https://xantorohara.github.io/led-matrix-editor/
+
+const uint64_t DAFTPUNK[] = {
+  0x0000001b1b001b1b,
+  0x000000001b1b1b00,
+  0x000000000e0e0e00,
+  0x0000000e0e000e0e,
+  0x0000001b1b001b1b,
+  0x0000001500110015,
+  0x000000000e0a0e00,
+  0x0000001500110015,
+  0x00000007051f141c,
+  0x0000001c141f0507,
+  0x0000001f1515151f,
+  0x000000001f111f00,
+  0x0000001119151311,
+  0x0000001113151911,
+  0x00000000181b0300,
+  0x00000000031b1800,
+  0x0000001111111111,
+  0x0000000a0a0a0a0a,
+  0x0000000404040404,
+  0x0000000c0c0c0c0c,
+  0x000000111b1f0e04,
+  0x000000040e1f1b11,
+  0x0000001f1111111f,
+  0x000000001f111f00,
+  0x000000110a040a11,
+  0x000000111b0e1b11,
+  0x000000000a1f0a00,
+  0x00000000040e0400,
+  0x000000000a040a00,
+  0x00000004041f0404,
+  0x000000110a000a11
+};
+const int DAFTPUNK_LEN = sizeof(DAFTPUNK)/8;
+
+               
+void initDP() {
+  appRunning = true;
+
+//  randomSeed(analogRead(0));
+  clearTablePixels();
+  showPixels();
+}
+
+void displayImageDP(uint64_t image) 
+{
+  for (int y = 0; y < 5; y++) 
+  {
+    byte row = (image >> y * 8) & 0xFF;
+    for (int x = 0; x<5; x++) 
+    {
+      if( bitRead(row, x) )
+      {
+        if (!printmode)
+        {
+          setTablePixelDouble (x+1, y, RED );
+        }
+        else 
+        {
+          setTablePixel (x, y, RED);
+          setTablePixel (x+5, y, YELLOW);
+          setTablePixel (x+10, y, RED);
+          setTablePixel (x, y+5, YELLOW);
+          setTablePixel (x+5, y+5, RED);
+          setTablePixel (x+10, y+5, YELLOW);
+        }
+      }
+      else
+      {
+        if (!printmode)
+        {
+          setTablePixelDouble (x+1, y, BLACK);
+        }
+        else 
+        {  
+          setTablePixel (x, y, BLACK);
+          setTablePixel (x+5, y, BLACK);
+          setTablePixel (x+10, y, BLACK);
+          setTablePixel (x, y+5, BLACK);
+          setTablePixel (x+5, y+5, BLACK);
+          setTablePixel (x+10, y+5, BLACK);
+        }
+      }
+    }
+  }
+  showPixels();
+//  delay (500);
+}
+
+void runDP() {
+  initDP();
+  unsigned long curTime, click=0;
+  uint8_t i = 1;
+
+  while(appRunning) 
+  {
+    displayImageDP(DAFTPUNK[i]);
+    if (++i >= DAFTPUNK_LEN ) i = 0;
+   
+    curTime=millis();
+    do
+    {
+      readInput();
+      if (curControl == BTN_EXIT){
+        appRunning = false;
+        break;
+      }
+      else if (curControl != BTN_NONE && millis()-click > 600)
+      {
+        printmode=1-printmode;
+        click=millis();
+        clearTablePixels();
+      }
+
+    }
+    while ((millis()- curTime) <1000);//Once enough time  has passed, proceed. The lower this number, the faster the game is //20
+
+  }
+  displayLogo();
+}
+
+
+
+
+
+/////////////////////////////////////////////////
+
 void loop() {
   // put your main code here, to run repeatedly:
+  runDP();
   fadeOut();
 /*
   if(millis()-lastMillis > 20){
