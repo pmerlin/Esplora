@@ -113,7 +113,7 @@ uint16_t leds[NUM_PIXELS];
 uint16_t curControl = BTN_NONE;
 #define MINPLAYER 1
 #define MAXPLAYER 2
-uint8_t nbPlayer = 4; // MINPLAYER ;
+uint8_t nbPlayer = 2; // MINPLAYER ;
 uint8_t nbPlayerDie ;
 boolean appRunning = false;
 
@@ -138,7 +138,7 @@ void readInput(){
     curControl += BTN_DOWN;
 }        
 
-void setPixel(int n, uint16_t color){
+void setPixel(uint8_t n, uint16_t color){
   leds[n] = color;
 //  tft.drawPixel(n%s_width, n/s_width, color );
 
@@ -151,7 +151,7 @@ void setPixel(int n, uint16_t color){
 #endif
 }
 
-void setPixelRGB(int n, int r,int g, int b){
+void setPixelRGB(uint8_t n, uint8_t r,uint8_t g, uint8_t b){
   leds[n] = RGB(r,g,b);
 //  tft.drawPixel(n%s_width, n/s_width, RGB(r,g,b) );
 #ifdef ADA
@@ -163,7 +163,7 @@ void setPixelRGB(int n, int r,int g, int b){
 #endif
 }
 
-void setTablePixelrgb(int x, int y, CRGB color){
+void setTablePixelrgb(uint8_t x, uint8_t y, CRGB color){
   leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = color ;
 //  tft.drawPixel(x, y, color);
 #ifdef ADA
@@ -175,7 +175,7 @@ void setTablePixelrgb(int x, int y, CRGB color){
 #endif
 }
 
-void setTablePixelRGB(int x, int y, int r,int g, int b){
+void setTablePixelRGB(uint8_t x, uint8_t y, uint8_t r,uint8_t g, uint8_t b){
   leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = RGB(r,g,b) ;
 //  tft.drawPixel(x, y, RGB(r,g,b));
 #ifdef ADA
@@ -187,14 +187,14 @@ void setTablePixelRGB(int x, int y, int r,int g, int b){
 #endif  
 }
 
-void setTablePixelDouble(int x, int y, uint16_t color){
+void setTablePixelDouble(uint8_t x, uint8_t y, uint16_t color){
    setTablePixel( (x<<1), (y<<1), color);
    setTablePixel( (x<<1)+1, (y<<1), color);
    setTablePixel( (x<<1), (y<<1)+1, color);
    setTablePixel( (x<<1)+1, (y<<1)+1, color);
 }
 
-void setTablePixel(int x, int y, uint16_t color){
+void setTablePixel(uint8_t x, uint8_t y, uint16_t color){
    leds [ (y * LONG_SIDE) + x] = (color) ; 
 //   tft.drawPixel(x, y, color);
 #ifdef ADA
@@ -206,7 +206,7 @@ void setTablePixel(int x, int y, uint16_t color){
 #endif
 }
 
-void setTablePixelv(int x, int y, int color){
+void setTablePixelv(uint8_t x, uint8_t y, uint16_t color){
 /*
   if (x & 0x01)
    leds[ x*LONG_SIDE + y ] = CRGB(color) ; //15
@@ -223,7 +223,7 @@ void setTablePixelv(int x, int y, int color){
 }
 
 
-uint16_t getPixel(int n){
+uint16_t getPixel(uint8_t n){
 //return (EsploraTFT.readPixel( n%s_width<<DECAL, n/s_width<<DECAL )); 
 return (leds[n]);
 }
@@ -283,7 +283,7 @@ setTablePixel(1,3,CRGB(0x00FF00) );
 setTablePixel(2,3,CRGB(0x0000FF) );
 //   FastLED.show();
    delay(1000);
-for (int i =0x7F; i; i--)
+for (uint8_t i =0x7F; i; i--)
 {
   setTablePixelDouble(0,4,RGB(i,0,0) ); //16
   setTablePixelDouble(1,4,RGB(0,i,0) ); //8
@@ -304,7 +304,7 @@ for (int i =0x7F; i; i--)
 }
 #endif
 }
-
+/*
 void initPixelsv(){
 
 //  FastLED.addLeds<FAST_LED_CHIPSET, FAST_LED_DATA_PIN, COLOR_ORDER>(leds, NUM_PIXELS).setCorrection(TypicalSMD5050);
@@ -319,24 +319,25 @@ void initPixelsv(){
 //   FastLED.show();
    delay(1000);
 
-  for (int y = 0; y < LONG_SIDE; y++)
+  for (uint8_t y = 0; y < LONG_SIDE; y++)
   {
-    for (int x = 0; x < SHORT_SIDE  ; x++)
+    for (uint8_t x = 0; x < SHORT_SIDE  ; x++)
     {
       setTablePixelv (x, y, YELLOW );
 //      FastLED.show();
-      delay(50);
+      delay(5);
       setTablePixelv(x, y, BLUE);
     }
   }   
   delay(1000);
 }
+*/
 
 
 
 void dimLeds(float factor){
   //Reduce brightness of all LEDs, typical factor is 0.97
-  for (int n=0; n<(FIELD_WIDTH*FIELD_HEIGHT); n++)
+  for (uint8_t n=0; n<(FIELD_WIDTH*FIELD_HEIGHT); n++)
   {
     uint16_t curColor = getPixel(n);
 
@@ -358,7 +359,7 @@ void dimLeds(float factor){
 
 void fadeOut(){
 
-  int selection = 1;//random(3);
+  uint8_t selection = 1;//random(3);
 
   
   switch(selection){
@@ -366,7 +367,7 @@ void fadeOut(){
     case 1:
     {
       //Fade out by dimming all pixels
-      for (int i=0; i<100; i++){
+      for (uint8_t i=0; i<100; i++){
         dimLeds(0.80); //0.97
         showPixels();
         delay(20);
@@ -376,13 +377,13 @@ void fadeOut(){
     case 2:
     {
       //Fade out by swiping from left to right with ruler
-      const int ColumnDelay = 10;
-      int curColumn = 0;
-      for (int i=0; i<FIELD_WIDTH*ColumnDelay; i++){
+      const uint8_t ColumnDelay = 10;
+      uint8_t curColumn = 0;
+      for (uint8_t i=0; i<FIELD_WIDTH*ColumnDelay; i++){
         dimLeds(0.97);
         if (i%ColumnDelay==0){
           //Draw vertical line
-          for (int y=0;y<FIELD_HEIGHT;y++){
+          for (uint8_t y=0;y<FIELD_HEIGHT;y++){
             setTablePixel(curColumn, y, GREEN);
           }
           curColumn++;
@@ -391,7 +392,7 @@ void fadeOut(){
         delay(5);
       }
       //Sweep complete, keep dimming leds for short time
-      for (int i=0; i<100; i++){
+      for (uint8_t i=0; i<100; i++){
         dimLeds(0.9);
         showPixels();
         delay(5);
@@ -452,7 +453,7 @@ void setup() {
   EsploraTFT.noStroke(); //(200,20,180);
 #endif
   
-  initPixelsv();
+  initPixels();
   delay(1000);
 //  testMatrix();
   displayLogo();
@@ -499,7 +500,7 @@ const uint64_t DAFTPUNK[] = {
   0x00000004041f0404,
   0x000000110a000a11
 };
-const int DAFTPUNK_LEN = sizeof(DAFTPUNK)/8;
+const uint8_t DAFTPUNK_LEN = sizeof(DAFTPUNK)/8;
 
                
 void initDP() {
@@ -515,10 +516,10 @@ void displayImageDP(uint64_t image)
 //  EsploraTFT.stroke(RED);
 //  EsploraTFT.fill(RED);
 
-  for (int y = 0; y < 5; y++) 
+  for (uint8_t y = 0; y < 5; y++) 
   {
     byte row = (image >> y * 8) & 0xFF;
-    for (int x = 0; x<5; x++) 
+    for (uint8_t x = 0; x<5; x++) 
     {
       if( bitRead(row, x) )
       {
@@ -606,10 +607,10 @@ const uint64_t CHIFFRE[] = {
 
 void printDigit (uint8_t num, uint8_t x, uint8_t y, unsigned long col)
 {
-     for (int i=0; i <5 ; i++)
+     for (uint8_t i=0; i <5 ; i++)
      {
         byte row= (CHIFFRE[num] >>i *8) & 0xFF;
-        for (int j = 0; j<3; j++)
+        for (uint8_t j = 0; j<3; j++)
         {
           if (bitRead(row,j))
             setTablePixel (j+x, i+y, col);
@@ -747,9 +748,9 @@ boolean mappRunning;
 
 
 void scrollText3(char* text, uint8_t lx, uint8_t ly, CRGB color[2]){
-  int size=strlen(text)*3;
+  uint8_t size=strlen(text)*3;
   
-  for (int x=0; x>-(size); x--){
+  for (int8_t x=0; x>-(size); x--){
     printText3(text, x+lx, ly, color);
     showPixels();
     delay (300);
@@ -757,9 +758,9 @@ void scrollText3(char* text, uint8_t lx, uint8_t ly, CRGB color[2]){
 }
 
 void scrollText4(char* text, uint8_t lx, uint8_t ly, CRGB color[2]){
-  int size=strlen(text)*4;
+  uint8_t size=strlen(text)*4;
   
-  for (int x=0; x>-(size); x--){
+  for (int8_t x=0; x>-(size); x--){
     printText4(text, x+lx, ly, color);
     showPixels();
     delay (300);
@@ -774,7 +775,7 @@ void initNbPlayer(){
 
 void runNbPlayer(){
   char *text= "Select NB PLAYER ";
-  int size=(strlen(text)*3) + DECAL;
+  uint8_t size=(strlen(text)*3) + DECAL;
 //  unsigned long PrintCol[2];
   unsigned long startTime, click=0, t;
 //  PrintCol[0]= YELLOW;
@@ -791,7 +792,7 @@ void runNbPlayer(){
 //    printText3 ("NB PLAYER", -1, 0, PrintCol);
 
   
-    for (int x=0; x>-(size); x--){
+    for (int8_t x=0; x>-(size); x--){
       printText3(text, x+DECAL, 0, PrintCol);
 //      showPixels();
     
@@ -848,7 +849,7 @@ const uint64_t IMAGES[] = {
   0x3c24243c3c24243c,
   0x784848781e12121e
 };
-const int IMAGES_LEN = sizeof(IMAGES)/8;
+const uint8_t IMAGES_LEN = sizeof(IMAGES)/8;
 
 const uint64_t IMAGES2[] = {
   0x0000000000000000,
@@ -885,12 +886,12 @@ const byte bytex[]={3,4,5, 6,7,8, 8,8,8, 8,7,6, 5,4,3, 2,1,0, 0,0,0, 0,1,2 }; //
 
 void countDown(uint8_t nb)
 {
-  for (int r=nb; r >=0 ; r--)
+  for (int8_t r=nb; r >=0 ; r--)
   {
-     for (int i=0; i <5 ; i++)
+     for (uint8_t i=0; i <5 ; i++)
      {
         byte row= (CHIFFRE[r] >>i *8) & 0xFF;
-        for (int j = 0; j<3; j++)
+        for (uint8_t j = 0; j<3; j++)
         {
           if (bitRead(row,j))
             setTablePixel (j+3, i+2, RED);
@@ -899,11 +900,11 @@ void countDown(uint8_t nb)
         }
          
       }
-      for (int i=0; i <24 ; i++)
+      for (uint8_t i=0; i <24 ; i++)
       {
       
 ///      ledtable.fill(bytec[r],bytec[ (r+17)%24] , color_red);
-        for (int j = 0; j<8; j++)
+        for (uint8_t j = 0; j<8; j++)
         {
           setTablePixel(bytex[(i-j+24)%24],bytex[(i-j+18)%24] , WHITE);
           setTablePixel(bytex[(i-j+16)%24],bytex[(i-j+10)%24] , BLACK); 
@@ -918,10 +919,10 @@ void countDown(uint8_t nb)
 
 void displayDoubleImage(const uint64_t image)
 {
-  for (int i=0; i <8 ; i++)
+  for (uint8_t i=0; i <8 ; i++)
   {
     byte row= (image >>i *8) & 0xFF;
-    for (int j = 0; j<8; j++)
+    for (uint8_t j = 0; j<8; j++)
     {
       if (bitRead(row,j)){
         setTablePixel(j, i, PURPLE);
@@ -934,7 +935,7 @@ void displayDoubleImage(const uint64_t image)
   }
 }
 
-void DelayAndTestExit(int time){
+void DelayAndTestExit(uint8_t time){
   static unsigned long prevUpdateTime = 0;
   static unsigned long curTime = 0;
 
@@ -976,30 +977,30 @@ void runTest(){
   while(appRunning)
   {
 
-  if (appRunning)  for (int d=0; d<5; d++)
+  if (appRunning)  for (uint8_t d=0; d<5; d++)
   {
-  for (int c=1; c<6; c++)
+  for (uint8_t c=1; c<6; c++)
   {
     displayDoubleImage(IMAGES5[c]);
     DelayAndTestExit(DELAY);
   }
  
-  if (appRunning) for (int c=6-2; c>=0; c--)
+  if (appRunning) for (int8_t c=6-2; c>=0; c--)
   {
     displayDoubleImage(IMAGES5[c]);
     DelayAndTestExit(DELAY);
   }
   }
 
-  if (appRunning) for (int d=0; d<5; d++)
+  if (appRunning) for (uint8_t d=0; d<5; d++)
   {
-  for (int c=0; c<IMAGES_LEN; c++)
+  for (uint8_t c=0; c<IMAGES_LEN; c++)
   {
     displayDoubleImage(IMAGES2[c]);
     DelayAndTestExit(DELAY);
   }
  
-  if (appRunning) for (int c=IMAGES_LEN-1; c>=0; c--)
+  if (appRunning) for (int8_t c=IMAGES_LEN-1; c>=0; c--)
   {
     displayDoubleImage(IMAGES2[c]);
     DelayAndTestExit(DELAY);
@@ -1007,15 +1008,15 @@ void runTest(){
   }
 
 
-  if (appRunning) for (int d=0; d<10; d++)
-  for (int c=0; c<6; c++)
+  if (appRunning) for (uint8_t d=0; d<10; d++)
+  for (uint8_t c=0; c<6; c++)
   {
     displayDoubleImage(IMAGES3[c]);
     DelayAndTestExit(DELAY);
   }
 
-  if (appRunning) for (int d=0; d<10; d++)
-  for (int c=0; c<IMAGES_LEN; c++)
+  if (appRunning) for (uint8_t d=0; d<10; d++)
+  for (uint8_t c=0; c<IMAGES_LEN; c++)
   {
     displayDoubleImage(IMAGES[c]);
     DelayAndTestExit(DELAY);
@@ -1033,20 +1034,20 @@ void runTest(){
 #define MAXSELECTION  13
 
 
-unsigned int curSelection = MINSELECTION;
+uint8_t curSelection = MINSELECTION;
 
 #define TEXTSPEED  140
 
 void mainLoop(void){
   char* curSelectionText;
-  int curSelectionTextLength;
+  uint8_t curSelectionTextLength;
   unsigned long prevUpdateTime = 0;
   int8_t oldNbPlayer;
 
   char* SelectionText[]= { "0 Menu ,", "1 Rainbow ", "2 Animation ", "3 Stars ", "4 Vu Meter ", "5 DaftPunk ", "6 Tetris ", "7 Snake ", 
   "8 Pong ", "9 Bricks ", "10 Test ", "11 GameOfLife ", "12 Nb Player ", "13 JinX ", "14 Cylon ", "15 Plasma " };
 
-runBricks();
+//runBricks();
 //runNbPlayer();
 //runDP();
 //runColorPalette();
@@ -1061,9 +1062,9 @@ runBricks();
     boolean runSelection = false;
 
     //Scroll current selection text from right to left;
-//    for (int x=LONG_SIDE; x>-(curSelectionTextLength*8); x--){
-    for (int x=LONG_SIDE; x>-(curSelectionTextLength*3); x--){
-//    for (int x=0; x>-(size); x--){
+//    for (uint8_t x=LONG_SIDE; x>-(curSelectionTextLength*8); x--){
+    for (int8_t x=LONG_SIDE; x>-(curSelectionTextLength*3); x--){
+//    for (uint8_t x=0; x>-(size); x--){
 
 //      printText(curSelectionText, curSelectionTextLength, x, (SHORT_SIDE-8)/2, YELLOW);
       printText3(curSelectionText, x, 3, PrintCol );
@@ -1197,15 +1198,15 @@ float ballY = 6;
 float xincrement = 1;
 float yincrement = 1;
 
-int rad = 1;
-int scorePlayer = 0;
-int blockWidth = 1;
-int blockHeight = 1;
-int maxAttempt = 1;
+uint8_t rad = 1;
+uint8_t scorePlayer = 0;
+uint8_t blockWidth = 1;
+uint8_t blockHeight = 1;
+uint8_t maxAttempt = 1;
 
-int positionPlayer = 6;
+int8_t positionPlayer = 6;
 
-int numBlocks = 30;
+uint8_t numBlocks = 30;
 #define MAX_SCORE numBlocks
 #define MAX_ATTEMPT 5
 #define PADDLE_SIZE 3
@@ -1256,7 +1257,7 @@ void bricksInit(){
   maxAttempt = 0;
   ballY = 6;
   ballX = 10;
-  for (int i=0; i<numBlocks; i++){
+  for (uint8_t i=0; i<numBlocks; i++){
     bricks[i][0] = 1;
   }
 }
@@ -1287,12 +1288,12 @@ void runBricks(){
     setTablePixelv(ballX,ballY,WHITE);
     
     // Draw player paddle
-    for (int x=positionPlayer-PADDLE_SIZE/2; x<=positionPlayer+PADDLE_SIZE/2; ++x){
+    for (uint8_t x=positionPlayer-PADDLE_SIZE/2; x<=positionPlayer+PADDLE_SIZE/2; ++x){
       setTablePixelv(x, LONG_SIDE-1, BLUE);
 //      setTablePixelv(x, SHORT_SIDE-1, BLUE);
     }
     // Draw bricks
-    for (int i=0; i<numBlocks; i++){
+    for (uint8_t i=0; i<numBlocks; i++){
       if(bricks[i][0] == 1) {
         setTablePixelv(bricks[i][1],bricks[i][2], GREEN);
       }
@@ -1319,7 +1320,7 @@ void runBricks(){
   
   fadeOut();
   char buf[4];
-  int len = sprintf(buf, "%i ", scorePlayer);
+  uint8_t len = sprintf(buf, "%i ", scorePlayer);
 
 //TODO 
 //  scrollTextBlockedv(buf,len,WHITE);
@@ -1403,15 +1404,15 @@ void checkBallOutOfBoundsTable() {
 }
 
 boolean checkBlockCollision(){
-    int ballTop = ballY-rad;                                            // Values for easy reference
-    int ballBottom = ballY+rad;
-    int ballLeft = ballX-rad;
-    int ballRight = ballX+rad;
+    uint8_t ballTop = ballY-rad;                                            // Values for easy reference
+    uint8_t ballBottom = ballY+rad;
+    uint8_t ballLeft = ballX-rad;
+    uint8_t ballRight = ballX+rad;
     
-    for(int i=0;i<numBlocks;i++){                                       // Loop through the blocks
+    for(uint8_t i=0;i<numBlocks;i++){                                       // Loop through the blocks
         if(bricks[i][0] == 1){                                          // If the block hasn't been eliminated
-         int blockX = bricks[i][1];                                     // Grab x and y location
-         int blockY = bricks[i][2];
+         uint8_t blockX = bricks[i][1];                                     // Grab x and y location
+         uint8_t blockY = bricks[i][2];
          if(ballBottom >= blockY && ballTop <= blockY+blockHeight){     // If hitting BLOCK
            if(ballRight >= blockX && ballLeft <= blockX+blockWidth){       
              removeBlock(i);                                            // Mark the block as out of play
@@ -1423,7 +1424,7 @@ boolean checkBlockCollision(){
   return false;                                                         // No collision detected
 }
 /* Removes a block from game play */
-void removeBlock(int index){
+void removeBlock(uint8_t index){
       bricks[index][0] = 0;                                             // Mark it as out of play
       scorePlayer++;                                                          // Increment score
       yincrement = -yincrement;                                         // Flip the y increment
