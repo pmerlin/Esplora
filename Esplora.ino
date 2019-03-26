@@ -277,17 +277,18 @@ void dimLeds(float factor){
     uint16_t curColor = getPixel(n);
 
     //Derive the tree colors
-    byte  r = ( curColor >>11 );
+    byte  b = ( curColor >>11 );
     byte  g = ((curColor & 0x003F)>>5);
-    byte  b = (curColor & 0x001F);
+    byte  r = (curColor & 0x001F);
     //Reduce brightness
     r = r*factor;
     g = g*factor;
     b = b*factor;
     //Pack into single variable again
     curColor = RGB(r,g,b);
-    //Set led again
-    setPixel(n,curColor);  }
+    //Set led again 
+    setPixel(n,curColor);  
+    }
 }
 
 
@@ -302,7 +303,7 @@ void fadeOut(){
     {
       //Fade out by dimming all pixels
       for (int i=0; i<100; i++){
-        dimLeds(0.97);
+        dimLeds(0.80); //0.97
         showPixels();
         delay(20);
       }
@@ -524,16 +525,399 @@ void runDP() {
   }
   displayLogo();
 }
-
-
-
-
-
 /////////////////////////////////////////////////
+
+const uint64_t CHIFFRE[] = {
+  0x0000000705050507,
+  0x0000000702020302,
+  0x0000000701070407,
+  0x0000000704070407,
+  0x0000000404070505,
+  0x0000000704070107,
+  0x0000000705070107,
+  0x0000000404060407,
+  0x0000000705070507,
+  0x0000000704070507
+};
+
+void printDigit (uint8_t num, uint8_t x, uint8_t y, unsigned long col)
+{
+     for (int i=0; i <5 ; i++)
+     {
+        byte row= (CHIFFRE[num] >>i *8) & 0xFF;
+        for (int j = 0; j<3; j++)
+        {
+          if (bitRead(row,j))
+            setTablePixel (j+x, i+y, col);
+          else
+            setTablePixel (j+x, i+y, BLACK);
+        }
+     }
+}
+
+void printNumber (uint8_t num, uint8_t x, uint8_t y, unsigned long col)
+{
+  uint8_t d=num/10;
+  uint8_t u=num%10;
+
+  if (d){
+    printDigit (d,x,y, col);
+    printDigit (u,x+4,y, col);
+  }
+  else printDigit (u,x+2,y, col);
+}
+
+//#include "font.h"
+uint8_t charBuffer[8][8];
+
+uint8_t loadCharInBuffer(char letter){
+  uint8_t* tmpCharPix;
+  uint8_t tmpCharWidth;
+  
+  int letterIdx = (letter-32)*8;
+  
+  int x=0; int y=0;
+  for (int idx=letterIdx; idx<letterIdx+8; idx++){
+    for (int x=0; x<8; x++){
+//      charBuffer[x][y] = ((font[idx]) & (1<<(7-x)))>0;
+    }
+    y++;
+  }
+  
+  tmpCharWidth = 8;
+  return tmpCharWidth;
+}
+
+void printText(char* text, unsigned int textLength, int xoffset, int yoffset, int color){
+  uint8_t curLetterWidth = 0;
+  int curX = xoffset;
+  clearTablePixels();
+  
+  //Loop over all the letters in the string
+  for (int i=0; i<textLength; i++){
+    //Determine width of current letter and load its pixels in a buffer
+    curLetterWidth = loadCharInBuffer(text[i]);
+    //Loop until width of letter is reached
+    for (int lx=0; lx<curLetterWidth; lx++){
+      //Now copy column per column to field (as long as within the field
+      if (curX>=LONG_SIDE){//If we are to far to the right, stop loop entirely
+        break;
+      } else if (curX>=0){//Draw pixels as soon as we are "inside" the drawing area
+        for (int ly=0; ly<8; ly++){//Finally copy column
+          setTablePixel(curX,yoffset+ly,charBuffer[lx][ly]*color);
+        }
+      }
+      curX++;
+    }
+  }
+  
+  showPixels();
+}
+
+#include "font2.h"
+void printText3(char* text, uint8_t xoffset, uint8_t yoffset, unsigned long color[2] ){
+//  uint8_t curLetterWidth = 0;
+  uint8_t curX = xoffset, col;
+  
+  //Loop over all the letters in the string
+  for (uint8_t i=0; i<strlen(text); i++){
+//    loadLetter(text[i]);
+    
+     
+    //Loop until width of letter is reached
+    for (uint8_t lx=0; lx<3; lx++){
+      curX= 3*i + xoffset +lx;
+      col=Wendy3x5[ (text[i]-32)*3 +lx ];
+      //Now copy column per column to field (as long as within the field
+      if ( curX < LONG_SIDE && curX >= 0)   //If we are to far to the right, stop loop entirely
+ //     if ( curX < 0) break;//If we are to far to the right, stop loop entirely      
+    
+      for (uint8_t ly=0; ly<5; ly++){//Finally copy column
+//        if (letter[lx][ly])
+        if ( bitRead(col, ly) )
+          setTablePixel(curX, yoffset+ly, color[i%2]);
+        else
+          setTablePixel(curX, yoffset+ly, BLACK);
+      }
+    }
+  }
+}
+
+void printText4(char* text, uint8_t xoffset, uint8_t yoffset, unsigned long color[2] ){
+//  uint8_t curLetterWidth = 0;
+  uint8_t curX = xoffset, col;
+  
+  //Loop over all the letters in the string
+  for (uint8_t i=0; i<strlen(text); i++){
+//    loadLetter(text[i]);
+    
+     
+    //Loop until width of letter is reached
+    for (uint8_t lx=0; lx<4; lx++){
+      curX= 4*i + xoffset +lx;
+      if (lx==3) col = 0;
+      else col=Wendy3x5[ (text[i]-32)*3 +lx ];
+      
+      //Now copy column per column to field (as long as within the field
+      if ( curX < LONG_SIDE && curX >= 0)   //If we are to far to the right, stop loop entirely
+ //     if ( curX < 0) break;//If we are to far to the right, stop loop entirely      
+    
+      for (uint8_t ly=0; ly<5; ly++){//Finally copy column
+//        if (letter[lx][ly])
+        if ( bitRead(col, ly) )
+          setTablePixel(curX, yoffset+ly, color[i%2]);
+        else
+          setTablePixel(curX, yoffset+ly, BLACK);
+      }
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+#define DECAL 4
+boolean mappRunning;
+
+
+void scrollText3(char* text, uint8_t lx, uint8_t ly, unsigned long color[2]){
+  int size=strlen(text)*3;
+  
+  for (int x=0; x>-(size); x--){
+    printText3(text, x+lx, ly, color);
+    showPixels();
+    delay (300);
+  }
+}
+
+void scrollText4(char* text, uint8_t lx, uint8_t ly, unsigned long color[2]){
+  int size=strlen(text)*4;
+  
+  for (int x=0; x>-(size); x--){
+    printText4(text, x+lx, ly, color);
+    showPixels();
+    delay (300);
+  }
+}
+
+void initNbPlayer(){  
+  mappRunning = true;
+  clearTablePixels();
+  showPixels();
+}
+
+void runNbPlayer(){
+  char *text= "Select NB PLAYER ";
+  int size=(strlen(text)*3) + DECAL;
+  unsigned long PrintCol[2];
+  unsigned long startTime, click=0, t;
+  PrintCol[0]= YELLOW;
+  PrintCol[1]= RED;
+
+
+  initNbPlayer();
+  
+  while(mappRunning){
+ 
+    scrollText3 ("ABCDEFGHIJKLMNOPQRSTUVWXYZ ", 7, 0, PrintCol);
+    scrollText3 ("abcdefghijklmnopqrstuvwxyz ", 0, 0, PrintCol);
+    scrollText3 ("0123456789 ", 7, 0, PrintCol);
+//    printText3 ("NB PLAYER", -1, 0, PrintCol);
+
+  
+    for (int x=0; x>-(size); x--){
+      printText3(text, x+DECAL, 0, PrintCol);
+//      showPixels();
+    
+//// some stuff
+      printNumber (nbPlayer, 4, 5, RED);
+      showPixels();
+    
+      //Check input keys
+      startTime=millis();
+      do{
+        readInput();
+//        t=millis()-click;
+  //      Serial.println(t);
+        
+        if (curControl == BTN_EXIT || curControl == BTN_START){
+          mappRunning = false;
+          break;
+        }
+        else if (curControl != BTN_NONE && millis()-click >400)
+        {
+          click=millis();
+          if (curControl & BTN_RIGHT) nbPlayer++;
+          else if (curControl & BTN_LEFT) nbPlayer--;
+
+          if (nbPlayer<MINPLAYER) nbPlayer=MINPLAYER;
+          else if (nbPlayer>MAXPLAYER) nbPlayer=MAXPLAYER;
+        
+        }
+      }
+      while ( mappRunning && (millis()- startTime) < 200); //Once enough time  has passed, proceed. The lower this number, the faster the game is
+    }
+  }
+  displayLogo();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define MINSELECTION  1
+#define MAXSELECTION  13
+
+
+unsigned int curSelection = MINSELECTION;
+
+#define TEXTSPEED  140
+
+void mainLoop(void){
+  char* curSelectionText;
+  int curSelectionTextLength;
+  unsigned long prevUpdateTime = 0;
+  int8_t oldNbPlayer;
+
+  char* SelectionText[]= { "0 Menu,", "1 Rainbow", "2 Animation", "3 Stars", "4 Vu Meter", "5 DaftPunk", "6 Tetris", "7 Snake", 
+  "8 Pong", "9 Bricks", "10 Test", "11 GameOfLife", "12 Nb Player", "13 JinX", "14 Cylon", "15 Plasma" };
+
+runNbPlayer();
+//runDP();
+//runColorPalette();
+
+  while(true){
+    //Show menu system and wait for input
+    clearTablePixels();
+    curSelectionText= SelectionText[curSelection];
+    curSelectionTextLength=strlen(curSelectionText);
+    
+    boolean selectionChanged = false;
+    boolean runSelection = false;
+
+    //Scroll current selection text from right to left;
+    for (int x=LONG_SIDE; x>-(curSelectionTextLength*8); x--){
+//    for (int x=0; x>-(size); x--){
+
+      printText(curSelectionText, curSelectionTextLength, x, (SHORT_SIDE-8)/2, YELLOW);
+//      printText3(curSelectionText, x, 3, col );
+
+      //Read buttons
+      unsigned long curTime;
+      do{
+        readInput();
+        if (curControl != BTN_NONE){        
+          if (curControl == BTN_LEFT){
+            curSelection--;
+            selectionChanged = true;
+            delay(400);
+          } 
+          else if ( curControl & BTN_EXIT){
+            Serial.print(curControl);
+            oldNbPlayer=nbPlayer;
+            if  (curControl & BTN_LEFT) {nbPlayer=1; Serial.print("NB");}
+            else if  (curControl & BTN_UP) nbPlayer=2;
+            else if  (curControl & BTN_DOWN) nbPlayer=3;
+            else if  (curControl & BTN_RIGHT) nbPlayer=4;
+            if (oldNbPlayer != nbPlayer) 
+            {
+              Serial.print("PRINT");
+              clearTablePixels();
+ //             printText3 ("NbPla", 0, 0, PrintCol);
+              printNumber (nbPlayer, 4, 5, RED);
+              showPixels();
+              delay (1000);
+            }
+          }
+          else if (curControl == BTN_RIGHT){
+            curSelection++;
+            selectionChanged = true;
+            delay(400);
+          } 
+          else if (curControl == BTN_START){
+            runSelection = true;
+          } 
+          checkSelectionRange();
+        }
+        curTime = millis();
+      } while (((curTime - prevUpdateTime) < TEXTSPEED) && (curControl == BTN_NONE));//Once enough time  has passed, proceed
+      prevUpdateTime = curTime;
+      
+      if (selectionChanged || runSelection)
+        break;
+    }
+    
+    //If we are here, it means a selection was changed or a game started, or user did nothing
+    if (selectionChanged){
+      //For now, do nothing
+    } else if (runSelection){//Start selected game
+      switch (curSelection){
+        case 1:
+//          runRainbowPalette();
+          break;
+        case 2:
+//          runColorPalette();
+          break;
+        case 3:
+//          runStars();         
+          break;
+        case 4:
+//          runVUmeter();
+          break;
+        case 5:
+          runDP();
+          break;
+        case 6:
+//          runTetris();
+          break;   
+        case 7:
+//          runSnake();
+          break; 
+        case 8:
+//          runPong();        
+          break;  
+        case 9:       
+//          runBricks();
+          break;        
+        case 10:
+//          runTest();
+          break;                           
+        case 11:
+//          runGameofLife();
+          break;       
+        case 12:
+          runNbPlayer();
+          break;                           
+        case 13:
+//          runJinx();
+          break;                           
+        case 14:
+//          runCylon();
+          break;                           
+        case 15:
+//          runPlasma();
+          break;                           
+      }
+    } else {
+      //If we are here, no action was taken by the user, so we will move to the next selection automatically
+      curSelection++;
+      checkSelectionRange();
+    }
+  }
+}
+
+void checkSelectionRange(){
+  if (curSelection>MAXSELECTION){
+    curSelection = MINSELECTION;
+  } else if (curSelection<MINSELECTION){
+    curSelection = MAXSELECTION;
+  }
+}
+
+
+
+/////////////////////////////////////////////////////
 
 void loop() {
   // put your main code here, to run repeatedly:
-  runDP();
+//  runDP();
+  mainLoop();
   fadeOut();
 /*
   if(millis()-lastMillis > 20){
