@@ -13,7 +13,7 @@
 
 
 
-#define DEBUG
+//#define DEBUG
 #define DECAL 3
 #define SCALE 8
 
@@ -46,16 +46,34 @@ boolean monitor = false;
 #define BLUE    0xF800
 #define LBLUE    0xFFE0 // Cyan
 #define RED     0x001F
-#define ORANGE  0x00AA  //TEST CREATING COLOR
-#define GREEN   0x07E0
+#define ORANGE  0x00AA  // 0xFD20      /* 255, 165,   0 */
+#define GREEN   0x07E0  /*   0, 255,   0 */
 #define LGREEN   0x04E0    
 #define MAGENTA 0xF81F
 #define YELLOW  0x07FF
 #define WHITE   0xFFFF
 #define LWHITE   0x4444
+#define PURPLE   0x780F      /* 128,   0, 128 */
+
+#define Black           0x0000      /*   0,   0,   0 */
+#define Navy            0x000F      /*   0,   0, 128 */
+#define DarkGreen       0x03E0      /*   0, 128,   0 */
+#define DarkCyan        0x03EF      /*   0, 128, 128 */
+#define Maroon          0x7800      /* 128,   0,   0 */
+#define Olive           0x7BE0      /* 128, 128,   0 */
+#define LightGrey       0xC618      /* 192, 192, 192 */
+#define DarkGrey        0x7BEF      /* 128, 128, 128 */
+#define Blue            0x001F      /*   0,   0, 255 */
+#define Cyan            0x07FF      /*   0, 255, 255 */
+#define Red             0xF800      /* 255,   0,   0 */
+#define Magenta         0xF81F      /* 255,   0, 255 */
+#define Yellow          0xFFE0      /* 255, 255,   0 */
+#define Orange          0xFD20      /* 255, 165,   0 */
+#define GreenYellow     0xAFE5      /* 173, 255,  47 */
+#define Pink            0xF81F
 
 uint16_t colorLib[3] = {YELLOW, BLUE, WHITE};
-
+uint16_t PrintCol[2]= {YELLOW, RED};
 //SOUND
 #define sound_pin 6 // Direct sound on Esplora
 
@@ -78,7 +96,7 @@ uint16_t colorLib[3] = {YELLOW, BLUE, WHITE};
 #define  BTN_RIGHT  32
 
 //ACCELEROMETER (mod for Esplora)
-int acc_avgX, acc_avgY, acc_avgZ;
+//int acc_avgX, acc_avgY, acc_avgZ;
 #define acc_pinX 1  // A5
 #define acc_pinY 2  // A7
 #define acc_pinZ 3  // A6
@@ -120,15 +138,15 @@ void readInput(){
     curControl += BTN_DOWN;
 }        
 
-void setPixel(int n, uint16_t col){
-  leds[n] = col;
+void setPixel(int n, uint16_t color){
+  leds[n] = color;
 //  tft.drawPixel(n%s_width, n/s_width, color );
 
 #ifdef ADA
-  tft.fillRect(n%s_width<<DECAL, n/s_width<<DECAL, SCALE, SCALE, col );
+  tft.fillRect(n%s_width<<DECAL, n/s_width<<DECAL, SCALE, SCALE, color );
 #else
-//  EsploraTFT.stroke(col);
-  EsploraTFT.fill(col);
+//  EsploraTFT.stroke(color);
+  EsploraTFT.fill(color);
   EsploraTFT.rect(n%s_width<<DECAL, n/s_width<<DECAL, SCALE, SCALE);
 #endif
 }
@@ -145,14 +163,14 @@ void setPixelRGB(int n, int r,int g, int b){
 #endif
 }
 
-void setTablePixelrgb(int x, int y, CRGB col){
-  leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = col ;
-//  tft.drawPixel(x, y, col);
+void setTablePixelrgb(int x, int y, CRGB color){
+  leds[ (y * LONG_SIDE) + (LONG_SIDE - 1) - x ] = color ;
+//  tft.drawPixel(x, y, color);
 #ifdef ADA
-  tft.fillRect(x<<DECAL, y<<DECAL, SCALE, SCALE, col );
+  tft.fillRect(x<<DECAL, y<<DECAL, SCALE, SCALE, color );
 #else
-//  EsploraTFT.stroke(col);
-  EsploraTFT.fill(col);
+//  EsploraTFT.stroke(color);
+  EsploraTFT.fill(color);
   EsploraTFT.rect(x<<DECAL, y<<DECAL, SCALE, SCALE);
 #endif
 }
@@ -169,24 +187,41 @@ void setTablePixelRGB(int x, int y, int r,int g, int b){
 #endif  
 }
 
-void setTablePixelDouble(int x, int y, uint16_t col){
-   setTablePixel( (x<<1), (y<<1), col);
-   setTablePixel( (x<<1)+1, (y<<1), col);
-   setTablePixel( (x<<1), (y<<1)+1, col);
-   setTablePixel( (x<<1)+1, (y<<1)+1, col);
+void setTablePixelDouble(int x, int y, uint16_t color){
+   setTablePixel( (x<<1), (y<<1), color);
+   setTablePixel( (x<<1)+1, (y<<1), color);
+   setTablePixel( (x<<1), (y<<1)+1, color);
+   setTablePixel( (x<<1)+1, (y<<1)+1, color);
 }
 
-void setTablePixel(int x, int y, uint16_t col){
-   leds [ (y * LONG_SIDE) + x] = (col) ; 
-//   tft.drawPixel(x, y, col);
+void setTablePixel(int x, int y, uint16_t color){
+   leds [ (y * LONG_SIDE) + x] = (color) ; 
+//   tft.drawPixel(x, y, color);
 #ifdef ADA
- tft.fillRect(x<<DECAL, y<<DECAL, SCALE, SCALE, col);
+ tft.fillRect(x<<DECAL, y<<DECAL, SCALE, SCALE, color);
 #else
-//  EsploraTFT.stroke(col);
-  EsploraTFT.fill(col);
+//  EsploraTFT.stroke(color);
+  EsploraTFT.fill(color);
   EsploraTFT.rect(x<<DECAL, y<<DECAL, SCALE, SCALE);
 #endif
 }
+
+void setTablePixelv(int x, int y, int color){
+/*
+  if (x & 0x01)
+   leds[ x*LONG_SIDE + y ] = CRGB(color) ; //15
+ else 
+ leds [ (LONG_SIDE-1-y)+ x*LONG_SIDE ] = color ; */
+ leds[ (LONG_SIDE-1-y) + x ] = CRGB(color);
+#ifdef ADA
+ tft.fillRect(x<<DECAL*LONG_SIDE, (x)<<DECAL, SCALE, SCALE, color);
+#else
+//  EsploraTFT.stroke(color);
+  EsploraTFT.fill(color);
+  EsploraTFT.rect( (LONG_SIDE-1-y)<<DECAL, (x)<<DECAL, SCALE, SCALE);
+#endif   
+}
+
 
 uint16_t getPixel(int n){
 //return (EsploraTFT.readPixel( n%s_width<<DECAL, n/s_width<<DECAL )); 
@@ -210,7 +245,7 @@ void clearTablePixels(){
 void showPixels(){
 //  FastLED.show();
 }
-
+/*
 void testMatrix() {
     setTablePixel(0, 0, WHITE);
     showPixels();
@@ -223,7 +258,7 @@ void testMatrix() {
     delay(2000);
     setTablePixel(9, 9, WHITE);
 }
-
+*/
 void initPixels(){
 
 #ifdef DEBUG
@@ -269,6 +304,35 @@ for (int i =0x7F; i; i--)
 }
 #endif
 }
+
+void initPixelsv(){
+
+//  FastLED.addLeds<FAST_LED_CHIPSET, FAST_LED_DATA_PIN, COLOR_ORDER>(leds, NUM_PIXELS).setCorrection(TypicalSMD5050);
+//  FastLED.addLeds<FAST_LED_CHIPSET, FAST_LED_DATA_PIN>(leds, NUM_PIXELS).setCorrection(TypicalSMD5050);
+//  FastLED.setBrightness(BRIGHTNESS);
+  leds[14] = CRGB(255,0,0);  //0,1
+  leds[15] = CRGB(0,255,0);  //0,2
+  leds[44] = CRGB(0,255,0);  //0,3
+  leds[45] = CRGB(0,0,255);
+  leds[74] = CRGB(0,0,255);
+  leds[75] = CRGB(0,0,255);
+//   FastLED.show();
+   delay(1000);
+
+  for (int y = 0; y < LONG_SIDE; y++)
+  {
+    for (int x = 0; x < SHORT_SIDE  ; x++)
+    {
+      setTablePixelv (x, y, YELLOW );
+//      FastLED.show();
+      delay(50);
+      setTablePixelv(x, y, BLUE);
+    }
+  }   
+  delay(1000);
+}
+
+
 
 void dimLeds(float factor){
   //Reduce brightness of all LEDs, typical factor is 0.97
@@ -388,7 +452,7 @@ void setup() {
   EsploraTFT.noStroke(); //(200,20,180);
 #endif
   
-  initPixels();
+  initPixelsv();
   delay(1000);
 //  testMatrix();
   displayLogo();
@@ -567,7 +631,9 @@ void printNumber (uint8_t num, uint8_t x, uint8_t y, unsigned long col)
   else printDigit (u,x+2,y, col);
 }
 
+/*
 //#include "font.h"
+
 uint8_t charBuffer[8][8];
 
 uint8_t loadCharInBuffer(char letter){
@@ -587,6 +653,7 @@ uint8_t loadCharInBuffer(char letter){
   tmpCharWidth = 8;
   return tmpCharWidth;
 }
+
 
 void printText(char* text, unsigned int textLength, int xoffset, int yoffset, int color){
   uint8_t curLetterWidth = 0;
@@ -613,9 +680,10 @@ void printText(char* text, unsigned int textLength, int xoffset, int yoffset, in
   
   showPixels();
 }
+*/
 
 #include "font2.h"
-void printText3(char* text, uint8_t xoffset, uint8_t yoffset, unsigned long color[2] ){
+void printText3(char* text, uint8_t xoffset, uint8_t yoffset, CRGB color[2] ){
 //  uint8_t curLetterWidth = 0;
   uint8_t curX = xoffset, col;
   
@@ -643,7 +711,7 @@ void printText3(char* text, uint8_t xoffset, uint8_t yoffset, unsigned long colo
   }
 }
 
-void printText4(char* text, uint8_t xoffset, uint8_t yoffset, unsigned long color[2] ){
+void printText4(char* text, uint8_t xoffset, uint8_t yoffset, CRGB color[2] ){
 //  uint8_t curLetterWidth = 0;
   uint8_t curX = xoffset, col;
   
@@ -678,7 +746,7 @@ void printText4(char* text, uint8_t xoffset, uint8_t yoffset, unsigned long colo
 boolean mappRunning;
 
 
-void scrollText3(char* text, uint8_t lx, uint8_t ly, unsigned long color[2]){
+void scrollText3(char* text, uint8_t lx, uint8_t ly, CRGB color[2]){
   int size=strlen(text)*3;
   
   for (int x=0; x>-(size); x--){
@@ -688,7 +756,7 @@ void scrollText3(char* text, uint8_t lx, uint8_t ly, unsigned long color[2]){
   }
 }
 
-void scrollText4(char* text, uint8_t lx, uint8_t ly, unsigned long color[2]){
+void scrollText4(char* text, uint8_t lx, uint8_t ly, CRGB color[2]){
   int size=strlen(text)*4;
   
   for (int x=0; x>-(size); x--){
@@ -707,19 +775,19 @@ void initNbPlayer(){
 void runNbPlayer(){
   char *text= "Select NB PLAYER ";
   int size=(strlen(text)*3) + DECAL;
-  unsigned long PrintCol[2];
+//  unsigned long PrintCol[2];
   unsigned long startTime, click=0, t;
-  PrintCol[0]= YELLOW;
-  PrintCol[1]= RED;
+//  PrintCol[0]= YELLOW;
+//  PrintCol[1]= RED;
 
 
   initNbPlayer();
   
   while(mappRunning){
  
-    scrollText3 ("ABCDEFGHIJKLMNOPQRSTUVWXYZ ", 7, 0, PrintCol);
-    scrollText3 ("abcdefghijklmnopqrstuvwxyz ", 0, 0, PrintCol);
-    scrollText3 ("0123456789 ", 7, 0, PrintCol);
+//    scrollText3 ("ABCDEFGHIJKLMNOPQRSTUVWXYZ ", 7, 0, PrintCol);
+//    scrollText3 ("abcdefghijklmnopqrstuvwxyz ", 0, 0, PrintCol);
+//    scrollText3 ("0123456789 ", 7, 0, PrintCol);
 //    printText3 ("NB PLAYER", -1, 0, PrintCol);
 
   
@@ -761,6 +829,206 @@ void runNbPlayer(){
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+/* LedTable
+ *
+ * Written by: Patrick MERLIN
+ * 
+ * Simple animations
+ */
+
+#define DELAY 60
+
+const uint64_t IMAGES[] = {
+  0xf09090f00f09090f,
+  0x00f0909ff9090f00,
+  0x0000ff9999ff0000,
+  0x000f09f99f90f000,
+  0x0f09090ff09090f0,
+  0x1e12121e78484878,
+  0x3c24243c3c24243c,
+  0x784848781e12121e
+};
+const int IMAGES_LEN = sizeof(IMAGES)/8;
+
+const uint64_t IMAGES2[] = {
+  0x0000000000000000,
+  0x0000001818000000,
+  0x00003c3c3c3c0000,
+  0x007e7e7e7e7e7e00,
+  0xffffffffffffffff,
+  0xffffffe7e7ffffff,
+  0xffffc3c3c3c3ffff,
+  0xff818181818181ff
+};
+
+const uint64_t IMAGES3[] = {
+  0x2020f824241f0404,
+  0x10107c18183e0808,
+  0x08083e18187c1010,
+  0x04041f2424f82020,
+  0x0004243ffc242000,
+  0x002024fc3f240400
+};
+
+const uint64_t IMAGES5[] = {
+  0xe0a0e00000070507,
+  0x70507000000e0a0e,
+  0x38283800001c141c,
+  0x1c141c0000382838,
+  0x0e0a0e0000705070,
+  0x0705070000e0a0e0
+};
+
+const byte bytex[]={3,4,5, 6,7,8, 8,8,8, 8,7,6, 5,4,3, 2,1,0, 0,0,0, 0,1,2 }; //24
+//const byte bytey[]={0,0,0, 0,1,2, 3,4,5, 6,7,8, 8,8,8, 8,7,6, 5,4,3, 2,1,0  };
+
+
+void countDown(uint8_t nb)
+{
+  for (int r=nb; r >=0 ; r--)
+  {
+     for (int i=0; i <5 ; i++)
+     {
+        byte row= (CHIFFRE[r] >>i *8) & 0xFF;
+        for (int j = 0; j<3; j++)
+        {
+          if (bitRead(row,j))
+            setTablePixel (j+3, i+2, RED);
+          else
+            setTablePixel (j+3, i+2, BLACK);
+        }
+         
+      }
+      for (int i=0; i <24 ; i++)
+      {
+      
+///      ledtable.fill(bytec[r],bytec[ (r+17)%24] , color_red);
+        for (int j = 0; j<8; j++)
+        {
+          setTablePixel(bytex[(i-j+24)%24],bytex[(i-j+18)%24] , WHITE);
+          setTablePixel(bytex[(i-j+16)%24],bytex[(i-j+10)%24] , BLACK); 
+        }      
+        showPixels();
+        delay(1000/24);
+      }
+
+//     clearTablePixels();
+  }
+}
+
+void displayDoubleImage(const uint64_t image)
+{
+  for (int i=0; i <8 ; i++)
+  {
+    byte row= (image >>i *8) & 0xFF;
+    for (int j = 0; j<8; j++)
+    {
+      if (bitRead(row,j)){
+        setTablePixel(j, i, PURPLE);
+        setTablePixel(j+7, i+2, RED);}
+      else{
+        setTablePixel(j, i, BLACK);
+        setTablePixel(j+7, i+2, BLACK);}
+    }
+    showPixels();
+  }
+}
+
+void DelayAndTestExit(int time){
+  static unsigned long prevUpdateTime = 0;
+  static unsigned long curTime = 0;
+
+    //Check input keys
+    do{
+      readInput();
+      if (curControl == BTN_EXIT){
+        appRunning = false;
+        break;
+      }
+      curTime = millis();
+      delay(10);
+    } 
+    while ((curTime - prevUpdateTime) <80);//Once enough time  has passed, proceed. The lower this number, the faster the game is
+    prevUpdateTime = curTime;  
+}
+
+
+
+
+void initTest(){
+  appRunning = true;
+  countDown(3);
+
+  printNumber (15, 0, 0, RED);
+  printNumber (99, 8,0, YELLOW);
+  showPixels();
+  delay (5000);
+  clearTablePixels();
+}
+
+void runTest(){
+  clearTablePixels();
+  showPixels();
+  initTest();  
+
+
+  
+  while(appRunning)
+  {
+
+  if (appRunning)  for (int d=0; d<5; d++)
+  {
+  for (int c=1; c<6; c++)
+  {
+    displayDoubleImage(IMAGES5[c]);
+    DelayAndTestExit(DELAY);
+  }
+ 
+  if (appRunning) for (int c=6-2; c>=0; c--)
+  {
+    displayDoubleImage(IMAGES5[c]);
+    DelayAndTestExit(DELAY);
+  }
+  }
+
+  if (appRunning) for (int d=0; d<5; d++)
+  {
+  for (int c=0; c<IMAGES_LEN; c++)
+  {
+    displayDoubleImage(IMAGES2[c]);
+    DelayAndTestExit(DELAY);
+  }
+ 
+  if (appRunning) for (int c=IMAGES_LEN-1; c>=0; c--)
+  {
+    displayDoubleImage(IMAGES2[c]);
+    DelayAndTestExit(DELAY);
+  }
+  }
+
+
+  if (appRunning) for (int d=0; d<10; d++)
+  for (int c=0; c<6; c++)
+  {
+    displayDoubleImage(IMAGES3[c]);
+    DelayAndTestExit(DELAY);
+  }
+
+  if (appRunning) for (int d=0; d<10; d++)
+  for (int c=0; c<IMAGES_LEN; c++)
+  {
+    displayDoubleImage(IMAGES[c]);
+    DelayAndTestExit(DELAY);
+  }
+
+
+  }
+  displayLogo();
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 #define MINSELECTION  1
 #define MAXSELECTION  13
 
@@ -775,10 +1043,11 @@ void mainLoop(void){
   unsigned long prevUpdateTime = 0;
   int8_t oldNbPlayer;
 
-  char* SelectionText[]= { "0 Menu,", "1 Rainbow", "2 Animation", "3 Stars", "4 Vu Meter", "5 DaftPunk", "6 Tetris", "7 Snake", 
-  "8 Pong", "9 Bricks", "10 Test", "11 GameOfLife", "12 Nb Player", "13 JinX", "14 Cylon", "15 Plasma" };
+  char* SelectionText[]= { "0 Menu ,", "1 Rainbow ", "2 Animation ", "3 Stars ", "4 Vu Meter ", "5 DaftPunk ", "6 Tetris ", "7 Snake ", 
+  "8 Pong ", "9 Bricks ", "10 Test ", "11 GameOfLife ", "12 Nb Player ", "13 JinX ", "14 Cylon ", "15 Plasma " };
 
-runNbPlayer();
+runBricks();
+//runNbPlayer();
 //runDP();
 //runColorPalette();
 
@@ -792,11 +1061,12 @@ runNbPlayer();
     boolean runSelection = false;
 
     //Scroll current selection text from right to left;
-    for (int x=LONG_SIDE; x>-(curSelectionTextLength*8); x--){
+//    for (int x=LONG_SIDE; x>-(curSelectionTextLength*8); x--){
+    for (int x=LONG_SIDE; x>-(curSelectionTextLength*3); x--){
 //    for (int x=0; x>-(size); x--){
 
-      printText(curSelectionText, curSelectionTextLength, x, (SHORT_SIDE-8)/2, YELLOW);
-//      printText3(curSelectionText, x, 3, col );
+//      printText(curSelectionText, curSelectionTextLength, x, (SHORT_SIDE-8)/2, YELLOW);
+      printText3(curSelectionText, x, 3, PrintCol );
 
       //Read buttons
       unsigned long curTime;
@@ -873,10 +1143,10 @@ runNbPlayer();
 //          runPong();        
           break;  
         case 9:       
-//          runBricks();
+          runBricks();
           break;        
         case 10:
-//          runTest();
+          runTest();
           break;                           
         case 11:
 //          runGameofLife();
@@ -911,6 +1181,253 @@ void checkSelectionRange(){
 }
 
 
+
+/////////////////////////////////////////////////////
+
+/* LedTable
+ *
+ * Written by: Ing. David Hrbaty
+ * 
+ * 
+ * Main code for Bricks game
+ */
+ 
+float ballX = 10;
+float ballY = 6;
+float xincrement = 1;
+float yincrement = 1;
+
+int rad = 1;
+int scorePlayer = 0;
+int blockWidth = 1;
+int blockHeight = 1;
+int maxAttempt = 1;
+
+int positionPlayer = 6;
+
+int numBlocks = 30;
+#define MAX_SCORE numBlocks
+#define MAX_ATTEMPT 5
+#define PADDLE_SIZE 3
+boolean continueGame = true;
+
+char bricks[30][3] = {
+  // in play, xloc, yloc 
+   {1,0,0}  ,
+   {1,1,0}  ,
+   {1,2,0}  ,
+   {1,3,0}  ,
+   {1,4,0}  ,
+   {1,5,0}  ,
+   {1,6,0}  ,
+   {1,7,0}  ,
+   {1,8,0}  ,
+   {1,9,0}  ,
+   {1,0,1}  ,
+   {1,1,1}  ,
+   {1,2,1}  ,
+   {1,3,1}  ,
+   {1,4,1}  ,
+   {1,5,1}  ,
+   {1,6,1}  ,
+   {1,7,1}  ,
+   {1,8,1}  ,
+   {1,9,1}  , 
+   {1,0,2}  ,
+   {1,1,2}  ,
+   {1,2,2}  ,
+   {1,3,2}  ,
+   {1,4,2}  ,
+   {1,5,2}  ,
+   {1,6,2}  ,
+   {1,7,2}  ,
+   {1,8,2}  ,   
+   {1,9,2}  
+};
+/* Block shape */
+//static uint8_t brick[] PROGMEM = {
+static uint8_t brick[]  = {
+  10,
+  8,
+  0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+
+void bricksInit(){
+  scorePlayer = 0;
+  maxAttempt = 0;
+  ballY = 6;
+  ballX = 10;
+  for (int i=0; i<numBlocks; i++){
+    bricks[i][0] = 1;
+  }
+}
+
+void runBricks(){
+  bricksInit();
+  unsigned long prevUpdateTime = 0;
+  boolean bricksRunning = true;
+
+  while(bricksRunning){    
+    
+    if (scorePlayer == MAX_SCORE || maxAttempt == MAX_ATTEMPT){
+      bricksRunning = false;
+      break;
+    }
+    
+    checkBallHitByPaddle();
+    checkBlockCollision();
+    
+    ballX += xincrement;
+    ballY += yincrement;
+    
+    checkBallOutOfBoundsTable();
+    clearTablePixels();
+    
+
+    // Draw ball
+    setTablePixelv(ballX,ballY,WHITE);
+    
+    // Draw player paddle
+    for (int x=positionPlayer-PADDLE_SIZE/2; x<=positionPlayer+PADDLE_SIZE/2; ++x){
+      setTablePixelv(x, LONG_SIDE-1, BLUE);
+//      setTablePixelv(x, SHORT_SIDE-1, BLUE);
+    }
+    // Draw bricks
+    for (int i=0; i<numBlocks; i++){
+      if(bricks[i][0] == 1) {
+        setTablePixelv(bricks[i][1],bricks[i][2], GREEN);
+      }
+    }
+    showPixels();
+
+    unsigned long curTime;
+    boolean dirChanged = false;
+    do{
+      readInput();
+      if (curControl == BTN_EXIT){
+        bricksRunning = false;
+        break;
+      }
+      if (curControl != BTN_NONE && !dirChanged){//Can only change direction once per loop
+        dirChanged = true;
+        setPositionPaddle();
+      }
+      curTime = millis();
+    } 
+    while ((curTime - prevUpdateTime) <250);//Once enough time  has passed, proceed. The lower this number, the faster the game is
+    prevUpdateTime = curTime;
+  }
+  
+  fadeOut();
+  char buf[4];
+  int len = sprintf(buf, "%i ", scorePlayer);
+
+//TODO 
+//  scrollTextBlockedv(buf,len,WHITE);
+  scrollText3 (buf, 7, 0, PrintCol);
+  displayLogo();
+}
+
+void setPositionPaddle(){
+  switch(curControl){
+    case BTN_RIGHT:
+      if(positionPlayer + (PADDLE_SIZE-1) / 2 < SHORT_SIDE-1){
+        ++positionPlayer;
+      }
+      break;
+    case BTN_LEFT:
+      if(positionPlayer - PADDLE_SIZE / 2 > 0) {
+        --positionPlayer;
+      }
+      break;
+    case BTN_START:
+      break;
+    case BTN_UP:
+      break;
+    case BTN_DOWN:
+      break;
+  }
+}
+
+void checkBallHitByPaddle() {
+//  if(ballY == SHORT_SIDE-2)
+  if(ballY == LONG_SIDE-2) // line above paddle
+  {
+    if(ballX == positionPlayer) // paddle center
+    {
+      yincrement = -1;
+ //     ballY = SHORT_SIDE-2;
+ //     ballY = LONG_SIDE-2;
+    } 
+    else if(ballX < positionPlayer && ballX >= positionPlayer - PADDLE_SIZE / 2) // left side of paddle
+    {
+      yincrement = -1;
+      xincrement = max(-1,(int)xincrement-1); 
+//      ballY = FIELD_WIDTH-2;
+//     ballY = LONG_SIDE-2;
+      ballX = positionPlayer - PADDLE_SIZE / 2-1;
+    }    
+    else if(ballX > positionPlayer && ballX <= positionPlayer + (PADDLE_SIZE-1) / 2) // right side of the paddle
+    {
+      yincrement = -1;
+      xincrement = min(1,(int)xincrement+1); //right
+ //     ballY = SHORT_SIDE-2;
+      ballX = positionPlayer + (PADDLE_SIZE-1) / 2+1;
+    }    
+  } 
+}
+
+void checkBallOutOfBoundsTable() {
+  if(ballY < 0) 
+  {
+    yincrement = - yincrement;
+    ballY = 1;
+  } 
+  else if(ballY > LONG_SIDE-1) 
+  {
+    yincrement = - yincrement;
+    xincrement = 0;
+    ballY = LONG_SIDE/2;
+    ballX = SHORT_SIDE/2;
+    maxAttempt++;   
+  } 
+  if(ballX < 0) 
+  {
+    xincrement = - xincrement;
+    ballX = 1;
+  } 
+  else if(ballX > SHORT_SIDE-1) 
+  {
+    xincrement = - xincrement;
+    ballX = SHORT_SIDE-2;
+  } 
+}
+
+boolean checkBlockCollision(){
+    int ballTop = ballY-rad;                                            // Values for easy reference
+    int ballBottom = ballY+rad;
+    int ballLeft = ballX-rad;
+    int ballRight = ballX+rad;
+    
+    for(int i=0;i<numBlocks;i++){                                       // Loop through the blocks
+        if(bricks[i][0] == 1){                                          // If the block hasn't been eliminated
+         int blockX = bricks[i][1];                                     // Grab x and y location
+         int blockY = bricks[i][2];
+         if(ballBottom >= blockY && ballTop <= blockY+blockHeight){     // If hitting BLOCK
+           if(ballRight >= blockX && ballLeft <= blockX+blockWidth){       
+             removeBlock(i);                                            // Mark the block as out of play
+             return true;
+           }
+         }
+      }
+    }
+  return false;                                                         // No collision detected
+}
+/* Removes a block from game play */
+void removeBlock(int index){
+      bricks[index][0] = 0;                                             // Mark it as out of play
+      scorePlayer++;                                                          // Increment score
+      yincrement = -yincrement;                                         // Flip the y increment
+}
 
 /////////////////////////////////////////////////////
 
