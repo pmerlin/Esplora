@@ -1,10 +1,11 @@
+//#include <Arduino.h>
 //#define ADA
 
 //#define TABLE
 
 #include <Esplora.h>  // Try to use hardware but if not (buttons) use Esplora library function
 #include <SPI.h>
-#include <EEPROM.h>
+//#include <EEPROM.h>
 
 #ifdef ADA
 #include <Adafruit_GFX.h>    // Core graphics library
@@ -205,13 +206,6 @@ void setTablePixelRGB(uint8_t x, uint8_t y, uint8_t r,uint8_t g, uint8_t b){
 #endif  
 }
 
-void setTablePixelDouble(uint8_t x, uint8_t y, uint16_t color){
-   setTablePixel( (x<<1), (y<<1), color);
-   setTablePixel( (x<<1)+1, (y<<1), color);
-   setTablePixel( (x<<1), (y<<1)+1, color);
-   setTablePixel( (x<<1)+1, (y<<1)+1, color);
-}
-
 void setTablePixel(uint8_t x, uint8_t y, uint16_t color){
    #ifdef TABLE
    leds [ (y * LONG_SIDE) + x] = (color) ; 
@@ -224,6 +218,13 @@ void setTablePixel(uint8_t x, uint8_t y, uint16_t color){
   EsploraTFT.fill(color);
   EsploraTFT.rect(x<<DECAL, y<<DECAL, SCALE, SCALE);
 #endif
+}
+
+void setTablePixelDouble(uint8_t x, uint8_t y, uint16_t color){
+   setTablePixel( (x<<1), (y<<1), color);
+   setTablePixel( (x<<1)+1, (y<<1), color);
+   setTablePixel( (x<<1), (y<<1)+1, color);
+   setTablePixel( (x<<1)+1, (y<<1)+1, color);
 }
 
 void setTablePixelv(uint8_t x, uint8_t y, uint16_t color){
@@ -491,7 +492,8 @@ void setup() {
 //  ScoreSetup();
 }
 
-//////////////////////////////////////////////
+//////////////////////////////////////////////////
+/*
 
 uint8_t printmode=0;
 
@@ -620,6 +622,7 @@ void runDP() {
   }
   displayLogo();
 }
+*/
 /////////////////////////////////////////////////
 
 const uint64_t CHIFFRE[] = {
@@ -1111,6 +1114,7 @@ boolean moveAutoPlayer()
  * Simple animations
  */
 
+/*
 #define DELAY 60
 
 const uint64_t IMAGES[] = {
@@ -1300,6 +1304,8 @@ void runTest(){
   }
   displayLogo();
 }
+*/
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -1325,6 +1331,33 @@ uint8_t ax = 0;//Apple x position
 uint8_t ay = 0;//Apple y position
 //uint8_t acolor = BLUE;
 
+// Collision detection function
+boolean checkCollision(int x1, int x2, int y1, int y2)
+{
+  if ( x1==x2 && y1==y2)
+    return true;
+  return false;
+}
+
+//TODO Check if 3 dead snake around apple.
+void newApple()
+{
+  uint8_t i,j,collision; 
+  do
+  {
+    collision=0;
+    ax = random(FIELD_WIDTH-1);
+    ay = random(FIELD_HEIGHT-1);
+    for (j=0; j<nbPlayer; j++)
+      for(i=0; i<length[j]; i++)
+        if (checkCollision(ax, xs[j][i], ay, ys[j][i])) 
+        {
+          collision++;
+          break;
+        }
+   }
+   while (collision !=0);
+}
 
 void snakeInit(){
   //Snake start position and direction & initialise variables
@@ -1373,273 +1406,6 @@ void snakeInit(){
 
   snakeGameOver = false;
 }
-
-//TODO Check if 3 dead snake around apple.
-void newApple()
-{
-  uint8_t i,j,collision; 
-  do
-  {
-    collision=0;
-    ax = random(FIELD_WIDTH-1);
-    ay = random(FIELD_HEIGHT-1);
-    for (j=0; j<nbPlayer; j++)
-      for(i=0; i<length[j]; i++)
-        if (checkCollision(ax, xs[j][i], ay, ys[j][i])) 
-        {
-          collision++;
-          break;
-        }
-   }
-   while (collision !=0);
-}
-
-void runSnake(){
-  boolean snakeRunning = true;
-
-  //Check buttons and set snake movement direction while we are waiting to draw the next move
-  unsigned long curTime, now;
-  unsigned long dirChanged= 0;
-  unsigned long dirChanged2=0;
-  unsigned long dirChanged3=0;
-  unsigned long dirChanged4=0;
-  uint8_t i,j,len;
-
-  CRGB snakecol[]= { PURPLE , BLUE, GREEN, WHITE };
-  CRGB snakecolhead[MAXSNAKEPLAYER];
-
-  snakecolhead[0]=LPURPLE; //CRGB(0xFF0000);
-  snakecolhead[1]=LBLUE; //CRGB(0xFFFF00);
-  snakecolhead[2]=LGREEN;
-  snakecolhead[3]=LWHITE;
-  
-  if (nbPlayer>MAXSNAKEPLAYER) nbPlayer=MAXSNAKEPLAYER;
-  
-  snakeInit();
-  
-  while(snakeRunning)
-  {    
-    //Check collision with snake
-    for (j=0; j<nbPlayer; j++)
-    {
-      if ( isDead[j] ) continue;   
-      for (i=0; i<nbPlayer; i++)
-      {
-        if (i!=j) //not same snake
-        {
-          for(len=0; len < length[i]; len++)
-          {
-//        if (collide(xs[j][0], xs[j][len], ys[j][0], ys[j][len], SNAKEWIDTH, SNAKEWIDTH, SNAKEWIDTH, SNAKEWIDTH))     
-            if (checkCollision(xs[j][0], xs[i][len], ys[j][0], ys[i][len]))
-            {
-              Serial.println("\ncollision with other\n");
-              isDead[j]++;
-              die();
-              break;
-            }
-          }
-        }
-        else // same snake i==j
-        {
-          len=length[j]-1;
-          while (len>3) // need to be at least 4 for a self-collision
-          {
-            if (checkCollision(xs[j][0], xs[j][len], ys[j][0], ys[j][len]))
-            {
-              Serial.println("\nself collision\n");
-              isDead[j]++;
-              die();
-              break;
-            }
-            len--;            
-          }
-        }
-      }     
-    }
-
-    if (snakeGameOver){
-      snakeRunning = false;
-      break;
-    }
-
-    //Check collision of snake head with apple
-    for (j=0; j<nbPlayer; j++)
-    {
-      if ( isDead[j] ) continue;
-      
-      if (checkCollision(xs[j][0], ax, ys[j][0], ay))
-      {
-        length[j]++;
-            
-        //Generate new apple position
-        newApple();
-      }
-    }
-    
-    //Shift snake position array by one   
-    for (j=0; j<nbPlayer; j++)
-    {
-      if ( isDead[j] ) continue;
-      i = length[j]-1;
-      while (i>=1){
-        xs[j][i] = xs[j][i-1];
-        ys[j][i] = ys[j][i-1];
-        i = i-1;
-      }
- 
-      //Determine new position of head of snake
-      if (dir[j] == DIR_RIGHT){
-        xs[j][0]++;
-        if ( xs[j][0] == LONG_SIDE )  xs[j][0]=0;
-      } 
-      else if (dir[j] == DIR_LEFT){
-        if ( xs[j][0] == 0) xs[j][0]=LONG_SIDE;
-        xs[j][0]--;
-      } 
-      else if (dir[j] == DIR_UP){
-        if ( ys[j][0] == 0) ys[j][0]=SHORT_SIDE;
-        ys[j][0]--;
-      } 
-      else {//DOWN
-        ys[j][0]++;
-        if ( ys[j][0] == SHORT_SIDE )  ys[j][0]=0;
-      }
-    }
-    
-    //Check if outside playing field
-    for (j=0; j<nbPlayer; j++)
-    {
-      if ( isDead[j] ) continue; 
-      if (xs[j][0]<0) {xs[j][0] =FIELD_WIDTH -1;}
-      else if (xs[j][0]>=FIELD_WIDTH) {xs[j][0] = 0;}      
-      else if (ys[j][0]<0) {ys[j][0] =FIELD_HEIGHT -1;}
-      else if (ys[j][0]>=FIELD_HEIGHT) {ys[j][0] = 0;}    
-    }
-    clearTablePixels();
-   
-    //Draw apple
-    setTablePixel(ax,ay,YELLOW);
-
-    //Draw snakes
-    for (j=0; j<nbPlayer; j++)
-    {    
-      for (i=0; i<length[j]; i++)
-      {
-        if ( isDead[j] ) setTablePixel(xs[j][i], ys[j][i], RED);
-        else 
-        {
-          if(i==0) setTablePixel(xs[j][i], ys[j][i], snakecolhead[j]);
-          else setTablePixel(xs[j][i], ys[j][i], snakecol[j]);
-        }
-      }
-    }
-    
-    showPixels();
-
-
-    curTime = millis();
-    do{
-      readInput();
-      if (curControl == BTN_EXIT){
-        snakeRunning = false;
-        break;
-      } 
-      now=millis();
-
-      if ( curControl != BTN_NONE )
-      {       
-        Serial.print(curControl);
-
-        switch(nbPlayer)
-        {
-        case 1:
-        {
-          if (  (now-dirChanged)>SPEED &&  (curControl>BTN_START)  )  //Can only change direction once per loop
-          {
-            Serial.print("\nP1");
-            dirChanged=now; 
-            setDirection();
-          }
-          break;
-        }
-        
-        case 2:
-        {
-          if ( (now-dirChanged )>SPEED && ( (curControl&BTN_LEFT) || (curControl&BTN_RIGHT) ) ) //Can only change direction once per loop
-          {
-//            Serial.print("P1");
-            dirChanged=now; 
-            setDirectionJ1_2();
-          }
-        
-          if ( (now-dirChanged2)>SPEED  && ( (curControl&BTN_LEFT2) || (curControl&BTN_RIGHT2) ) ) //Can only change direction once per loop
-          {
-//            Serial.print("P2");
-            dirChanged2=now;
-            setDirectionJ2_2();
-          }
-          break;          
-        }
-        
-        
-        case 3:
-        case 4:
-        { 
-          Serial.print(curControl);
-          if ( (now-dirChanged )>SPEED && ( (curControl&BTN_LEFT) || (curControl&BTN_UP) ) ) //Can only change direction once per loop
-          {
-//            Serial.print("P1");
-            dirChanged=now; 
-            setDirectionJ1();
-          }
-        
-          if ( (now-dirChanged2)>SPEED  && ( (curControl&BTN_LEFT2) || (curControl&BTN_UP2) ) ) //Can only change direction once per loop
-          {
-//            Serial.print("P2");
-            dirChanged2=now;
-            setDirectionJ2();
-          }
-
-          if ( (nbPlayer >2) && (now-dirChanged3 )>SPEED &&( (curControl&BTN_DOWN) || (curControl&BTN_RIGHT) ) )
-          {
-//            Serial.print("P3");
-            dirChanged3=now;
-            setDirectionJ3();
-          }
-
-          if ( (nbPlayer >3) && (now-dirChanged4 )>SPEED && ( (curControl&BTN_DOWN2) || (curControl&BTN_RIGHT2) ) )
-          {
-//            Serial.print("P4");
-            dirChanged4=now;
-            setDirectionJ4();
-          }
-        }
-        break;
-        }
-      }
-    } 
-    while ( (millis() - curTime ) <SPEED);//Once enough time  has passed, proceed. The lower this number, the faster the game is // 
-  }
-  
-  fadeOut();
-
-  //add offset for 1 or 2 player to center scores
-  if(nbPlayer==1) {i=4; j=2;}
-  else if(nbPlayer==2) {i=0; j=2;}
-  else {i=j=0;}
-  
-  printNumber (length[0]-3, i, j, snakecol[0]);
-  if (nbPlayer > 1) printNumber (length[1]-3, 8, j, snakecol[1]);
-  if (nbPlayer > 2) printNumber (length[2]-3, 0, 5, snakecol[2]);
-  if (nbPlayer > 3) printNumber (length[3]-3, 8, 5, snakecol[3]);
-  
-  showPixels();
-  delay (4000);
-  fadeOut();
-  displayLogo();   
-}
-
-// Set direction from current button state 
 
 void setDirection()
 {
@@ -1747,170 +1513,268 @@ void die() //Ending, show score
   if( nbPlayerDie == nbPlayer )
   {
     snakeGameOver = true;
+    #ifdef DEBUG
     Serial.println("die");
+    #endif
   }
 }
 
-// Collision detection function
-boolean checkCollision(int x1, int x2, int y1, int y2)
-{
-  if ( x1==x2 && y1==y2)
-    return true;
-  return false;
-}
+void runSnake(){
+  boolean snakeRunning = true;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#define MINSELECTION  1
-#define MAXSELECTION  13
+  //Check buttons and set snake movement direction while we are waiting to draw the next move
+  unsigned long curTime, now;
+  unsigned long dirChanged= 0;
+  unsigned long dirChanged2=0;
+  unsigned long dirChanged3=0;
+  unsigned long dirChanged4=0;
+  uint8_t i,j,len;
 
+  CRGB snakecol[]= { PURPLE , BLUE, GREEN, WHITE };
+  CRGB snakecolhead[MAXSNAKEPLAYER];
 
-uint8_t curSelection = MINSELECTION;
-
-#define TEXTSPEED  140
-
-void mainLoop(void){
-  char* curSelectionText;
-  uint8_t curSelectionTextLength;
-  unsigned long prevUpdateTime = 0;
-  int8_t oldNbPlayer;
-
-  char* SelectionText[]= { "", "1 Rainbow ", "2 Animation ", "3 Stars ", "4 Vu Meter ", "5 DaftPunk ", "6 Tetris ", "7 Snake ", 
-  "8 Pong ", "9 Bricks ", "10 Test ", "11 GameOfLife ", "12 Nb Player ", "13 JinX ", "14 Cylon ", "15 Plasma " };
-
-//runBricks();
-//runNbPlayer();
-//runDP();
-//runColorPalette();
-
-  while(true){
-    //Show menu system and wait for input
-    clearTablePixels();
-    curSelectionText= SelectionText[curSelection];
-    curSelectionTextLength=strlen(curSelectionText);
-    
-    boolean selectionChanged = false;
-    boolean runSelection = false;
-
-    //Scroll current selection text from right to left;
-//    for (uint8_t x=LONG_SIDE; x>-(curSelectionTextLength*8); x--){
-    for (int8_t x=LONG_SIDE; x>-(curSelectionTextLength*3); x--){
-//    for (uint8_t x=0; x>-(size); x--){
-
-//      printText(curSelectionText, curSelectionTextLength, x, (SHORT_SIDE-8)/2, YELLOW);
-      printText3(curSelectionText, x, 3, PrintCol );
-//      printText4(curSelectionText, x, 3, PrintCol );
-      
-      //Read buttons
-      unsigned long curTime;
-      do{
-        readInput();
-        if (curControl != BTN_NONE){        
-          if (curControl == BTN_LEFT){
-            curSelection--;
-            selectionChanged = true;
-            delay(400);
-          } 
-          else if ( curControl & BTN_EXIT){
-            Serial.print(curControl);
-            oldNbPlayer=nbPlayer;
-            if  (curControl & BTN_LEFT) {nbPlayer=1; Serial.print("NB");}
-            else if  (curControl & BTN_UP) nbPlayer=2;
-            else if  (curControl & BTN_DOWN) nbPlayer=3;
-            else if  (curControl & BTN_RIGHT) nbPlayer=4;
-            if (oldNbPlayer != nbPlayer) 
+  snakecolhead[0]=LPURPLE; //CRGB(0xFF0000);
+  snakecolhead[1]=LBLUE; //CRGB(0xFFFF00);
+  snakecolhead[2]=LGREEN;
+  snakecolhead[3]=LWHITE;
+  
+  if (nbPlayer>MAXSNAKEPLAYER) nbPlayer=MAXSNAKEPLAYER;
+  
+  snakeInit();
+  
+  while(snakeRunning)
+  {    
+    //Check collision with snake
+    for (j=0; j<nbPlayer; j++)
+    {
+      if ( isDead[j] ) continue;   
+      for (i=0; i<nbPlayer; i++)
+      {
+        if (i!=j) //not same snake
+        {
+          for(len=0; len < length[i]; len++)
+          {
+//        if (collide(xs[j][0], xs[j][len], ys[j][0], ys[j][len], SNAKEWIDTH, SNAKEWIDTH, SNAKEWIDTH, SNAKEWIDTH))     
+            if (checkCollision(xs[j][0], xs[i][len], ys[j][0], ys[i][len]))
             {
-              Serial.print("PRINT");
-              clearTablePixels();
- //             printText3 ("NbPla", 0, 0, PrintCol);
-              printNumber (nbPlayer, 4, 5, RED);
-              showPixels();
-              delay (1000);
+              #ifdef DEBUG
+              Serial.println("\ncollision with other\n");
+              #endif
+              isDead[j]++;
+              die();
+              break;
             }
           }
-          else if (curControl == BTN_RIGHT){
-            curSelection++;
-            selectionChanged = true;
-            delay(400);
-          } 
-          else if (curControl == BTN_START){
-            runSelection = true;
-          } 
-          checkSelectionRange();
         }
-        curTime = millis();
-      } while (((curTime - prevUpdateTime) < TEXTSPEED) && (curControl == BTN_NONE));//Once enough time  has passed, proceed
-      prevUpdateTime = curTime;
+        else // same snake i==j
+        {
+          len=length[j]-1;
+          while (len>3) // need to be at least 4 for a self-collision
+          {
+            if (checkCollision(xs[j][0], xs[j][len], ys[j][0], ys[j][len]))
+            {
+              #ifdef DEBUG
+              Serial.println("\nself collision\n");
+              #endif
+              isDead[j]++;
+              die();
+              break;
+            }
+            len--;            
+          }
+        }
+      }     
+    }
+
+    if (snakeGameOver){
+      snakeRunning = false;
+      break;
+    }
+
+    //Check collision of snake head with apple
+    for (j=0; j<nbPlayer; j++)
+    {
+      if ( isDead[j] ) continue;
       
-      if (selectionChanged || runSelection)
-        break;
+      if (checkCollision(xs[j][0], ax, ys[j][0], ay))
+      {
+        length[j]++;
+            
+        //Generate new apple position
+        newApple();
+      }
     }
     
-    //If we are here, it means a selection was changed or a game started, or user did nothing
-    if (selectionChanged){
-      //For now, do nothing
-    } else if (runSelection){//Start selected game
-      switch (curSelection){
-        case 1:
-//          runRainbowPalette();
-          break;
-        case 2:
-//          runColorPalette();
-          break;
-        case 3:
-//          runStars();         
-          break;
-        case 4:
-//          runVUmeter();
-          break;
-        case 5:
-          runDP();
-          break;
-        case 6:
-//          runTetris();
-          break;   
-        case 7:
-          runSnake();
-          break; 
-        case 8:
- //         runPong();        
-          break;  
-        case 9:       
-          runBricks();
-          break;        
-        case 10:
-          runTest();
-          break;                           
-        case 11:
-//          runGameofLife();
-          break;       
-        case 12:
-          runNbPlayer();
-          break;                           
-        case 13:
-//          runJinx();
-          break;                           
-        case 14:
-//          runCylon();
-          break;                           
-        case 15:
-//          runPlasma();
-          break;                           
+    //Shift snake position array by one   
+    for (j=0; j<nbPlayer; j++)
+    {
+      if ( isDead[j] ) continue;
+      i = length[j]-1;
+      while (i>=1){
+        xs[j][i] = xs[j][i-1];
+        ys[j][i] = ys[j][i-1];
+        i = i-1;
       }
-    } else {
-      //If we are here, no action was taken by the user, so we will move to the next selection automatically
-      curSelection++;
-      checkSelectionRange();
+ 
+      //Determine new position of head of snake
+      if (dir[j] == DIR_RIGHT){
+        xs[j][0]++;
+        if ( xs[j][0] == LONG_SIDE )  xs[j][0]=0;
+      } 
+      else if (dir[j] == DIR_LEFT){
+        if ( xs[j][0] == 0) xs[j][0]=LONG_SIDE;
+        xs[j][0]--;
+      } 
+      else if (dir[j] == DIR_UP){
+        if ( ys[j][0] == 0) ys[j][0]=SHORT_SIDE;
+        ys[j][0]--;
+      } 
+      else {//DOWN
+        ys[j][0]++;
+        if ( ys[j][0] == SHORT_SIDE )  ys[j][0]=0;
+      }
     }
+    
+    //Check if outside playing field
+    for (j=0; j<nbPlayer; j++)
+    {
+      if ( isDead[j] ) continue; 
+      if (xs[j][0]<0) {xs[j][0] =FIELD_WIDTH -1;}
+      else if (xs[j][0]>=FIELD_WIDTH) {xs[j][0] = 0;}      
+      else if (ys[j][0]<0) {ys[j][0] =FIELD_HEIGHT -1;}
+      else if (ys[j][0]>=FIELD_HEIGHT) {ys[j][0] = 0;}    
+    }
+    clearTablePixels();
+   
+    //Draw apple
+    setTablePixel(ax,ay,YELLOW);
+
+    //Draw snakes
+    for (j=0; j<nbPlayer; j++)
+    {    
+      for (i=0; i<length[j]; i++)
+      {
+        if ( isDead[j] ) setTablePixel(xs[j][i], ys[j][i], RED);
+        else 
+        {
+          if(i==0) setTablePixel(xs[j][i], ys[j][i], snakecolhead[j]);
+          else setTablePixel(xs[j][i], ys[j][i], snakecol[j]);
+        }
+      }
+    }
+    
+    showPixels();
+
+
+    curTime = millis();
+    do{
+      readInput();
+      if (curControl == BTN_EXIT){
+        snakeRunning = false;
+        break;
+      } 
+      now=millis();
+
+      if ( curControl != BTN_NONE )
+      {       
+        #ifdef DEBUG
+        Serial.print(curControl);
+        #endif
+
+        switch(nbPlayer)
+        {
+        case 1:
+        {
+          if (  (now-dirChanged)>SPEED &&  (curControl>BTN_START)  )  //Can only change direction once per loop
+          {
+            #ifdef DEBUG
+            Serial.print("\nP1");
+            #endif
+            dirChanged=now; 
+            setDirection();
+          }
+          break;
+        }
+        
+        case 2:
+        {
+          if ( (now-dirChanged )>SPEED && ( (curControl&BTN_LEFT) || (curControl&BTN_RIGHT) ) ) //Can only change direction once per loop
+          {
+//            Serial.print("P1");
+            dirChanged=now; 
+            setDirectionJ1_2();
+          }
+        
+          if ( (now-dirChanged2)>SPEED  && ( (curControl&BTN_LEFT2) || (curControl&BTN_RIGHT2) ) ) //Can only change direction once per loop
+          {
+//            Serial.print("P2");
+            dirChanged2=now;
+            setDirectionJ2_2();
+          }
+          break;          
+        }
+        
+        
+        case 3:
+        case 4:
+        { 
+          #ifdef DEBUG
+          Serial.print(curControl);
+          #endif
+          if ( (now-dirChanged )>SPEED && ( (curControl&BTN_LEFT) || (curControl&BTN_UP) ) ) //Can only change direction once per loop
+          {
+//            Serial.print("P1");
+            dirChanged=now; 
+            setDirectionJ1();
+          }
+        
+          if ( (now-dirChanged2)>SPEED  && ( (curControl&BTN_LEFT2) || (curControl&BTN_UP2) ) ) //Can only change direction once per loop
+          {
+//            Serial.print("P2");
+            dirChanged2=now;
+            setDirectionJ2();
+          }
+
+          if ( (nbPlayer >2) && (now-dirChanged3 )>SPEED &&( (curControl&BTN_DOWN) || (curControl&BTN_RIGHT) ) )
+          {
+//            Serial.print("P3");
+            dirChanged3=now;
+            setDirectionJ3();
+          }
+
+          if ( (nbPlayer >3) && (now-dirChanged4 )>SPEED && ( (curControl&BTN_DOWN2) || (curControl&BTN_RIGHT2) ) )
+          {
+//            Serial.print("P4");
+            dirChanged4=now;
+            setDirectionJ4();
+          }
+        }
+        break;
+        }
+      }
+    } 
+    while ( (millis() - curTime ) <SPEED);//Once enough time  has passed, proceed. The lower this number, the faster the game is // 
   }
+  
+  fadeOut();
+
+  //add offset for 1 or 2 player to center scores
+  if(nbPlayer==1) {i=4; j=2;}
+  else if(nbPlayer==2) {i=0; j=2;}
+  else {i=j=0;}
+  
+  printNumber (length[0]-3, i, j, snakecol[0]);
+  if (nbPlayer > 1) printNumber (length[1]-3, 8, j, snakecol[1]);
+  if (nbPlayer > 2) printNumber (length[2]-3, 0, 5, snakecol[2]);
+  if (nbPlayer > 3) printNumber (length[3]-3, 8, 5, snakecol[3]);
+  
+  showPixels();
+  delay (4000);
+  fadeOut();
+  displayLogo();   
 }
 
-void checkSelectionRange(){
-  if (curSelection>MAXSELECTION){
-    curSelection = MINSELECTION;
-  } else if (curSelection<MINSELECTION){
-    curSelection = MAXSELECTION;
-  }
-}
+// Set direction from current button state 
 
 
 
@@ -1993,6 +1857,109 @@ void bricksInit(){
   }
 }
 
+void setPositionPaddle(){
+  switch(curControl){
+    case BTN_RIGHT:
+      if(positionPlayer + (PADDLE_SIZE-1) / 2 < SHORT_SIDE-1){
+        ++positionPlayer;
+      }
+      break;
+    case BTN_LEFT:
+      if(positionPlayer - PADDLE_SIZE / 2 > 0) {
+        --positionPlayer;
+      }
+      break;
+    case BTN_START:
+      break;
+    case BTN_UP:
+      break;
+    case BTN_DOWN:
+      break;
+  }
+}
+
+void checkBallHitByPaddle() {
+//  if(ballY == SHORT_SIDE-2)
+  if(ballY == LONG_SIDE-2) // line above paddle
+  {
+    if(ballX == positionPlayer) // paddle center
+    {
+      yincrement = -1;
+ //     ballY = SHORT_SIDE-2;
+ //     ballY = LONG_SIDE-2;
+    } 
+    else if(ballX < positionPlayer && ballX >= positionPlayer - PADDLE_SIZE / 2) // left side of paddle
+    {
+      yincrement = -1;
+      xincrement = max(-1,(int)xincrement-1); 
+//      ballY = FIELD_WIDTH-2;
+//     ballY = LONG_SIDE-2;
+      ballX = positionPlayer - PADDLE_SIZE / 2-1;
+    }    
+    else if(ballX > positionPlayer && ballX <= positionPlayer + (PADDLE_SIZE-1) / 2) // right side of the paddle
+    {
+      yincrement = -1;
+      xincrement = min(1,(int)xincrement+1); //right
+ //     ballY = SHORT_SIDE-2;
+      ballX = positionPlayer + (PADDLE_SIZE-1) / 2+1;
+    }    
+  } 
+}
+
+void removeBlock(uint8_t index) //  Removes a block from game play
+{
+      bricks[index][0] = 0;                                             // Mark it as out of play
+      scorePlayer++;                                                          // Increment score
+      yincrement = -yincrement;                                         // Flip the y increment
+}
+
+boolean checkBlockCollision(){
+    uint8_t ballTop = ballY-rad;                                            // Values for easy reference
+    uint8_t ballBottom = ballY+rad;
+    uint8_t ballLeft = ballX-rad;
+    uint8_t ballRight = ballX+rad;
+    
+    for(uint8_t i=0;i<numBlocks;i++){                                       // Loop through the blocks
+        if(bricks[i][0] == 1){                                          // If the block hasn't been eliminated
+         uint8_t blockX = bricks[i][1];                                     // Grab x and y location
+         uint8_t blockY = bricks[i][2];
+         if(ballBottom >= blockY && ballTop <= blockY+blockHeight){     // If hitting BLOCK
+           if(ballRight >= blockX && ballLeft <= blockX+blockWidth){       
+             removeBlock(i);                                            // Mark the block as out of play
+             return true;
+           }
+         }
+      }
+    }
+  return false;                                                         // No collision detected
+}
+
+void checkBallOutOfBoundsTable() {
+  if(ballY < 0) 
+  {
+    yincrement = - yincrement;
+    ballY = 1;
+  } 
+  else if(ballY > LONG_SIDE-1) 
+  {
+    yincrement = - yincrement;
+    xincrement = 0;
+    ballY = LONG_SIDE/2;
+    ballX = SHORT_SIDE/2;
+    maxAttempt++;   
+  } 
+  if(ballX < 0) 
+  {
+    xincrement = - xincrement;
+    ballX = 1;
+  } 
+  else if(ballX > SHORT_SIDE-1) 
+  {
+    xincrement = - xincrement;
+    ballX = SHORT_SIDE-2;
+  } 
+}
+
 void runBricks(){
   bricksInit();
   unsigned long prevUpdateTime = 0;
@@ -2059,107 +2026,166 @@ void runBricks(){
   displayLogo();
 }
 
-void setPositionPaddle(){
-  switch(curControl){
-    case BTN_RIGHT:
-      if(positionPlayer + (PADDLE_SIZE-1) / 2 < SHORT_SIDE-1){
-        ++positionPlayer;
-      }
-      break;
-    case BTN_LEFT:
-      if(positionPlayer - PADDLE_SIZE / 2 > 0) {
-        --positionPlayer;
-      }
-      break;
-    case BTN_START:
-      break;
-    case BTN_UP:
-      break;
-    case BTN_DOWN:
-      break;
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#define MINSELECTION  1
+#define MAXSELECTION  13
+
+
+uint8_t curSelection = MINSELECTION;
+
+#define TEXTSPEED  140
+
+void checkSelectionRange(){
+  if (curSelection>MAXSELECTION){
+    curSelection = MINSELECTION;
+  } else if (curSelection<MINSELECTION){
+    curSelection = MAXSELECTION;
   }
 }
 
-void checkBallHitByPaddle() {
-//  if(ballY == SHORT_SIDE-2)
-  if(ballY == LONG_SIDE-2) // line above paddle
-  {
-    if(ballX == positionPlayer) // paddle center
-    {
-      yincrement = -1;
- //     ballY = SHORT_SIDE-2;
- //     ballY = LONG_SIDE-2;
-    } 
-    else if(ballX < positionPlayer && ballX >= positionPlayer - PADDLE_SIZE / 2) // left side of paddle
-    {
-      yincrement = -1;
-      xincrement = max(-1,(int)xincrement-1); 
-//      ballY = FIELD_WIDTH-2;
-//     ballY = LONG_SIDE-2;
-      ballX = positionPlayer - PADDLE_SIZE / 2-1;
-    }    
-    else if(ballX > positionPlayer && ballX <= positionPlayer + (PADDLE_SIZE-1) / 2) // right side of the paddle
-    {
-      yincrement = -1;
-      xincrement = min(1,(int)xincrement+1); //right
- //     ballY = SHORT_SIDE-2;
-      ballX = positionPlayer + (PADDLE_SIZE-1) / 2+1;
-    }    
-  } 
-}
+void mainLoop(void){
+  char* curSelectionText;
+  uint8_t curSelectionTextLength;
+  unsigned long prevUpdateTime = 0;
+  int8_t oldNbPlayer;
 
-void checkBallOutOfBoundsTable() {
-  if(ballY < 0) 
-  {
-    yincrement = - yincrement;
-    ballY = 1;
-  } 
-  else if(ballY > LONG_SIDE-1) 
-  {
-    yincrement = - yincrement;
-    xincrement = 0;
-    ballY = LONG_SIDE/2;
-    ballX = SHORT_SIDE/2;
-    maxAttempt++;   
-  } 
-  if(ballX < 0) 
-  {
-    xincrement = - xincrement;
-    ballX = 1;
-  } 
-  else if(ballX > SHORT_SIDE-1) 
-  {
-    xincrement = - xincrement;
-    ballX = SHORT_SIDE-2;
-  } 
-}
+  char* SelectionText[]= { "", "1 Rainbow ", "2 Animation ", "3 Stars ", "4 Vu Meter ", "5 DaftPunk ", "6 Tetris ", "7 Snake ", 
+  "8 Pong ", "9 Bricks ", "10 Test ", "11 GameOfLife ", "12 Nb Player ", "13 JinX ", "14 Cylon ", "15 Plasma " };
 
-boolean checkBlockCollision(){
-    uint8_t ballTop = ballY-rad;                                            // Values for easy reference
-    uint8_t ballBottom = ballY+rad;
-    uint8_t ballLeft = ballX-rad;
-    uint8_t ballRight = ballX+rad;
+//runBricks();
+//runNbPlayer();
+//runDP();
+//runColorPalette();
+
+  while(true){
+    //Show menu system and wait for input
+    clearTablePixels();
+    curSelectionText= SelectionText[curSelection];
+    curSelectionTextLength=strlen(curSelectionText);
     
-    for(uint8_t i=0;i<numBlocks;i++){                                       // Loop through the blocks
-        if(bricks[i][0] == 1){                                          // If the block hasn't been eliminated
-         uint8_t blockX = bricks[i][1];                                     // Grab x and y location
-         uint8_t blockY = bricks[i][2];
-         if(ballBottom >= blockY && ballTop <= blockY+blockHeight){     // If hitting BLOCK
-           if(ballRight >= blockX && ballLeft <= blockX+blockWidth){       
-             removeBlock(i);                                            // Mark the block as out of play
-             return true;
-           }
-         }
-      }
+    boolean selectionChanged = false;
+    boolean runSelection = false;
+
+    //Scroll current selection text from right to left;
+//    for (uint8_t x=LONG_SIDE; x>-(curSelectionTextLength*8); x--){
+    for (int8_t x=LONG_SIDE; x>-(curSelectionTextLength*3); x--){
+//    for (uint8_t x=0; x>-(size); x--){
+
+//      printText(curSelectionText, curSelectionTextLength, x, (SHORT_SIDE-8)/2, YELLOW);
+      printText3(curSelectionText, x, 3, PrintCol );
+//      printText4(curSelectionText, x, 3, PrintCol );
+      
+      //Read buttons
+      unsigned long curTime;
+      do{
+        readInput();
+        if (curControl != BTN_NONE){        
+          if (curControl == BTN_LEFT){
+            curSelection--;
+            selectionChanged = true;
+            delay(400);
+          } 
+          else if ( curControl & BTN_EXIT){
+            #ifdef DEBUG
+            Serial.print(curControl);
+            #endif
+            oldNbPlayer=nbPlayer;
+            if  (curControl & BTN_LEFT) {nbPlayer=1;}
+            else if  (curControl & BTN_UP) nbPlayer=2;
+            else if  (curControl & BTN_DOWN) nbPlayer=3;
+            else if  (curControl & BTN_RIGHT) nbPlayer=4;
+            if (oldNbPlayer != nbPlayer) 
+            {
+              #ifdef DEBUG
+              Serial.print("PRINT");
+              #endif
+              clearTablePixels();
+ //             printText3 ("NbPla", 0, 0, PrintCol);
+              printNumber (nbPlayer, 4, 5, RED);
+              showPixels();
+              delay (1000);
+            }
+          }
+          else if (curControl == BTN_RIGHT){
+            curSelection++;
+            selectionChanged = true;
+            delay(400);
+          } 
+          else if (curControl == BTN_START){
+            runSelection = true;
+          } 
+          checkSelectionRange();
+        }
+        curTime = millis();
+      } while (((curTime - prevUpdateTime) < TEXTSPEED) && (curControl == BTN_NONE));//Once enough time  has passed, proceed
+      prevUpdateTime = curTime;
+      
+      if (selectionChanged || runSelection)
+        break;
     }
-  return false;                                                         // No collision detected
+    
+    //If we are here, it means a selection was changed or a game started, or user did nothing
+    if (selectionChanged){
+      //For now, do nothing
+    } else if (runSelection){//Start selected game
+      switch (curSelection){
+        case 1:
+//          runRainbowPalette();
+          break;
+        case 2:
+//          runColorPalette();
+          break;
+        case 3:
+//          runStars();         
+          break;
+        case 4:
+//          runVUmeter();
+          break;
+        case 5:
+//          runDP();
+          break;
+        case 6:
+//          runTetris();
+          break;   
+        case 7:
+          runSnake();
+          break; 
+        case 8:
+ //         runPong();        
+          break;  
+        case 9:       
+          runBricks();
+          break;        
+        case 10:
+//          runTest();
+          break;                           
+        case 11:
+//          runGameofLife();
+          break;       
+        case 12:
+          runNbPlayer();
+          break;                           
+        case 13:
+//          runJinx();
+          break;                           
+        case 14:
+//          runCylon();
+          break;                           
+        case 15:
+//          runPlasma();
+          break;                           
+      }
+    } else {
+      //If we are here, no action was taken by the user, so we will move to the next selection automatically
+      curSelection++;
+      checkSelectionRange();
+    }
+  }
 }
-/* Removes a block from game play */
-void removeBlock(uint8_t index){
-      bricks[index][0] = 0;                                             // Mark it as out of play
-      scorePlayer++;                                                          // Increment score
-      yincrement = -yincrement;                                         // Flip the y increment
-}
+
+
 
 /////////////////////////////////////////////////////
 
