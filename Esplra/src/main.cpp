@@ -1,11 +1,11 @@
-#include <Arduino.h>
+//#include <Arduino.h>
 //#define ADA
 
-//#define TABLE
+#define TABLE
 
 #include <Esplora.h>  // Try to use hardware but if not (buttons) use Esplora library function
 #include <SPI.h>
-#include <EEPROM.h>
+//#include <EEPROM.h>
 
 #ifdef ADA
 #include <Adafruit_GFX.h>    // Core graphics library
@@ -14,6 +14,7 @@
 #include <TFT.h>
 #endif
 
+#include <avr/pgmspace.h>
 
 
 //#define DEBUG
@@ -76,8 +77,9 @@ boolean monitor = false;
 #define GreenYellow     0xAFE5      /* 173, 255,  47 */
 #define Pink            0xF81F
 
-uint16_t colorLib[3] = {YELLOW, BLUE, WHITE};
+uint16_t colorLib[7] = {YELLOW, BLUE, WHITE, RED, GREEN, Pink, Orange};
 uint16_t PrintCol[2]= {YELLOW, RED};
+#define COLORLIB sizeof(colorLib)
 //SOUND
 #define sound_pin 6 // Direct sound on Esplora
 
@@ -368,7 +370,8 @@ void initPixelsv(){
 
 void dimLeds(float factor){
   //Reduce brightness of all LEDs, typical factor is 0.97
-  for (uint8_t n=0; n<(FIELD_WIDTH*FIELD_HEIGHT); n++)
+//  for (uint8_t n=0; n<(FIELD_WIDTH*FIELD_HEIGHT); n++)
+  for (uint8_t n=0; n<1; n++)
   {
     uint16_t curColor = getPixel(n);
 
@@ -376,15 +379,20 @@ void dimLeds(float factor){
     byte  b = ( curColor >>11 );
     byte  g = ((curColor & 0x003F)>>5);
     byte  r = (curColor & 0x001F);
+    char tmp[20];
+    sprintf(tmp, "RGBB %d %d %d\n",r,g,b);
+    Serial.println(tmp);
     //Reduce brightness
     r = r*factor;
     g = g*factor;
     b = b*factor;
+    sprintf(tmp, "RGBB %d %d %d\n",r,g,b);
+    Serial.println(tmp);
     //Pack into single variable again
     curColor = RGB(r,g,b);
     //Set led again 
     setPixel(n,curColor);  
-    }
+  }
 }
 
 
@@ -446,7 +454,7 @@ void displayLogo(){
   ipal[7] = RGB(110,80,210); 
   ipal[8] = RGB(210,190,200); 
 
-  const uint8_t ledtable[10][15] = {
+  const uint8_t PROGMEM ledtable[10][15] = {
   {1,1,1,0,2,2,2,3,0,0,0,3,4,0,0},
   {1,0,0,1,0,2,0,0,3,0,3,0,4,0,0},
   {1,0,0,1,0,2,0,0,0,3,0,0,4,0,0},
@@ -462,12 +470,68 @@ void displayLogo(){
   for (uint8_t y = 0; y < SHORT_SIDE; ++y) 
     for (uint8_t x = 0; x < LONG_SIDE; ++x)
     {
-      uint8_t idx = ledtable[y][x];
+//      uint8_t idx = pgm_read_byte_near (&ledtable[y][x] );
+      uint8_t idx = ledtable[y][x] ;
       setTablePixelrgb(x, y, ipal[idx]);
     }
   delay(2000);
 }
 
+static const unsigned char pong []PROGMEM = {
+0xff,0xe0,0x0,0x3f,0x80,0x7,0xe0,0x7,0xc0,0x3,0xfc,0x0,
+0xff,0xf8,0x1,0xff,0xe0,0x7,0xf0,0x7,0xc0,0x1f,0xff,0x0,
+0xff,0xfc,0x3,0xff,0xf0,0x7,0xf0,0x7,0xc0,0x3f,0xff,0x0,
+0xff,0xfe,0x7,0xff,0xf8,0x7,0xf8,0x7,0xc0,0xff,0xff,0x0,
+0xf8,0x7f,0xf,0xff,0xfc,0x7,0xfc,0x7,0xc0,0xff,0xff,0x0,
+0xf8,0x3f,0xf,0xe0,0xfe,0x7,0xfc,0x7,0xc1,0xfc,0x7,0x0,
+0xf8,0x1f,0x1f,0x80,0x7e,0x7,0xfe,0x7,0xc3,0xf8,0x1,0x0,
+0xf8,0x1f,0x1f,0x0,0x3e,0x7,0xfe,0x7,0xc3,0xf0,0x0,0x0,
+0xf8,0x1f,0x3f,0x0,0x3f,0x7,0xdf,0x7,0xc7,0xe0,0x0,0x0,
+0xf8,0x1f,0x3e,0x0,0x1f,0x7,0xdf,0x87,0xc7,0xc0,0x0,0x0,
+0xf8,0x3f,0x3e,0x0,0x1f,0x7,0xcf,0x87,0xc7,0xc1,0xff,0x80,
+0xf8,0x7e,0x3e,0x0,0x1f,0x7,0xc7,0xc7,0xc7,0xc1,0xff,0x80,
+0xff,0xfe,0x3e,0x0,0x1f,0x7,0xc7,0xe7,0xc7,0xc1,0xff,0x80,
+0xff,0xfc,0x3e,0x0,0x1f,0x7,0xc3,0xe7,0xc7,0xc1,0xff,0x80,
+0xff,0xf8,0x3e,0x0,0x1f,0x7,0xc1,0xf7,0xc7,0xc0,0xf,0x80,
+0xff,0xe0,0x3f,0x0,0x3f,0x7,0xc1,0xf7,0xc7,0xe0,0xf,0x80,
+0xf8,0x0,0x1f,0x0,0x3e,0x7,0xc0,0xff,0xc3,0xe0,0xf,0x80,
+0xf8,0x0,0x1f,0x80,0x7e,0x7,0xc0,0x7f,0xc3,0xf0,0xf,0x80,
+0xf8,0x0,0x1f,0xc0,0xfc,0x7,0xc0,0x7f,0xc3,0xfc,0xf,0x80,
+0xf8,0x0,0xf,0xff,0xfc,0x7,0xc0,0x3f,0xc1,0xff,0xff,0x80,
+0xf8,0x0,0x7,0xff,0xf8,0x7,0xc0,0x3f,0xc0,0xff,0xff,0x80,
+0xf8,0x0,0x3,0xff,0xf0,0x7,0xc0,0x1f,0xc0,0x7f,0xff,0x80,
+0xf8,0x0,0x1,0xff,0xe0,0x7,0xc0,0xf,0xc0,0x3f,0xff,0x0,
+0xf8,0x0,0x0,0x7f,0x0,0x7,0xc0,0xf,0xc0,0x7,0xf8,0x0
+};
+
+static const unsigned char game []PROGMEM ={
+0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x80,
+0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0xff,0x80,
+0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xc3,0xff,0x80,
+0x0,0x0,0x0,0x0,0x0,0x0,0xf,0xc3,0xff,0x80,
+0x0,0x0,0x0,0x0,0x3,0xe0,0xf,0xc3,0xe0,0x0,
+0x0,0x0,0x0,0x0,0x7,0xf0,0x1f,0xc1,0xe0,0x0,
+0x0,0x0,0x0,0xf8,0x7,0xf0,0x1f,0xc1,0xe0,0x0,
+0x0,0xfc,0x1,0xfc,0x7,0xf8,0x1f,0xc1,0xe0,0x0,
+0x7,0xfc,0x1,0xfc,0x3,0xf8,0x1f,0xe1,0xff,0x80,
+0x1f,0xfc,0x1,0xde,0x3,0xbc,0x3d,0xe1,0xff,0x80,
+0x3f,0xfe,0x1,0xde,0x3,0xbc,0x39,0xe1,0xff,0x80,
+0x7e,0x0,0x3,0xdf,0x3,0xde,0x39,0xe1,0xfc,0x0,
+0x7c,0x0,0x3,0xcf,0x3,0xde,0x39,0xe1,0xe0,0x0,
+0xf8,0x0,0x3,0xcf,0x3,0xcf,0x39,0xe1,0xf0,0x0,
+0xf8,0x0,0x3,0x87,0x83,0xcf,0x79,0xe0,0xf0,0x0,
+0xf0,0x7f,0x7,0x87,0x83,0xc7,0xf1,0xe0,0xf0,0xe0,
+0xf0,0xff,0x7,0x83,0xc3,0xc7,0xf1,0xe0,0xff,0xe0,
+0xf0,0xff,0x7,0xff,0xc1,0xc3,0xf1,0xf0,0xff,0xe0,
+0xf0,0xff,0x7,0xff,0xe1,0xc3,0xf0,0xf0,0xff,0xe0,
+0xf8,0xf,0xf,0xff,0xe1,0xc1,0xe0,0xf0,0xe0,0x0,
+0xf8,0xf,0x8f,0x1,0xf1,0xe1,0xe0,0xf0,0x0,0x0,
+0x7c,0xf,0x8f,0x0,0xf1,0xe1,0xe0,0x0,0x0,0x0,
+0x7f,0x1f,0x8f,0x0,0xf9,0xc0,0x0,0x0,0x0,0x0,
+0x3f,0xff,0x9f,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+0x1f,0xff,0x1f,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+0x7,0xfc,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0
+};
 
 void setup() {
   // put your setup code here, to run once:
@@ -483,6 +547,12 @@ void setup() {
   EsploraTFT.background(0,0,0);
   EsploraTFT.noStroke(); //(200,20,180);
 #endif
+
+  EsploraTFT.drawBitmap(3,3,pong,89,24,GREEN);
+  EsploraTFT.drawBitmap(10,30,game,75,26,RED);
+  delay(2000);
+
+  Serial.begin(9600);
   
   initPixels();
   delay(1000);
@@ -492,13 +562,14 @@ void setup() {
 //  ScoreSetup();
 }
 
-//////////////////////////////////////////////
+//////////////////////////////////////////////////
+
 
 uint8_t printmode=0;
 
 // https://xantorohara.github.io/led-matrix-editor/
 
-const uint64_t DAFTPUNK[] = {
+const uint64_t PROGMEM DAFTPUNK[] = {
   0x0000001b1b001b1b,
   0x000000001b1b1b00,
   0x000000000e0e0e00,
@@ -594,10 +665,13 @@ void runDP() {
   initDP();
   unsigned long curTime, click=0;
   uint8_t i = 1;
-
+  uint64_t lb;
+  
   while(appRunning) 
   {
-    displayImageDP(DAFTPUNK[i]);
+memcpy_P(&lb, & (DAFTPUNK[i]) , 8);
+displayImageDP(lb);
+//    displayImageDP(DAFTPUNK[i]);
     if (++i >= DAFTPUNK_LEN ) i = 0;
    
     curTime=millis();
@@ -621,6 +695,7 @@ void runDP() {
   }
   displayLogo();
 }
+
 /////////////////////////////////////////////////
 
 const uint64_t CHIFFRE[] = {
@@ -727,7 +802,7 @@ void printText3(char* text, uint8_t xoffset, uint8_t yoffset, CRGB color[2] ){
     //Loop until width of letter is reached
     for (uint8_t lx=0; lx<3; lx++){
       curX= 3*i + xoffset +lx;
-      col=Wendy3x5[ (text[i]-32)*3 +lx ];
+      col=pgm_read_byte_near (& Wendy3x5[ (text[i]-32)*3 +lx ] );
       //Now copy column per column to field (as long as within the field
       if ( curX < LONG_SIDE && curX >= 0)   //If we are to far to the right, stop loop entirely
  //     if ( curX < 0) break;//If we are to far to the right, stop loop entirely      
@@ -861,38 +936,40 @@ void runNbPlayer(){
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* LedTable
- *
- * Written by: Ing. David Hrbaty
- * Update PAtrick MERLIN
- * 
  * 
  * Main code for Pong game
  */
-/*
+
 
 #define PLAYER_HEIGHT 3
 #define MAX_SCORE 5
 #define AUTO_PLAYER_SPEED 200
+#define MAXSNAKEPLAYER 2
 
-int scorePlayerLeft;
-int scorePlayerRight;
+/*
+int8_t scorePlayer[MAXSNAKEPLAYER];
+int8_t positionPlayer[MAXSNAKEPLAYER];
+*/
+
+int8_t scorePlayerLeft;
+int8_t scorePlayerRight;
   
-int positionPlayerLeft;
-int positionPlayerRight;
+int8_t positionPlayerLeft;
+int8_t positionPlayerRight;
   
-int ballx;
-int previousBallx;
-int bally;
-int previousBally;
-int velocityx;
-int velocityy;
-int ballBounces;
+int8_t ballx;
+//int8_t previousBallx;
+int8_t  bally;
+//int8_t  previousBally;
+int8_t  velocityx;
+int8_t  velocityy;
+int8_t  ballBounces;
   
-int gameSpeed;
+//int8_t  gameSpeed;
   
 unsigned long lastAutoPlayerMoveTime;
-unsigned long rumbleUntil;
-unsigned long waitUntil;
+// unsigned long rumbleUntil;
+//unsigned long waitUntil;
 
 unsigned long curTime;
 unsigned long prevUpdateTime = 0;
@@ -900,7 +977,6 @@ unsigned long prevUpdateTime = 0;
 void pongInit(){
   scorePlayerLeft  = 0;
   scorePlayerRight = 0;
-//  FIELD_WIDTH * FIELD_HEIGHT;
   positionPlayerLeft  = FIELD_HEIGHT/2;
   positionPlayerRight = FIELD_HEIGHT/2;
   ballx = FIELD_WIDTH/2;
@@ -908,116 +984,39 @@ void pongInit(){
   velocityx = 1; 
   velocityy = 0;
   ballBounces = 0;
-  gameSpeed = 180;
+//  gameSpeed = 180;
   lastAutoPlayerMoveTime = 0;
-  rumbleUntil = 0;
-  waitUntil = 0;
-}
-
-void runPong(){
-  pongInit();
-  
-  boolean pongRunning = true;
-  while(pongRunning){    
-    
-    if (scorePlayerLeft == MAX_SCORE || scorePlayerRight == MAX_SCORE){
-      pongRunning = false;
-      break;
-    }
-    
-    checkBallHitByPlayer();
-    
-    if((curTime - lastAutoPlayerMoveTime) > AUTO_PLAYER_SPEED) {
-      if(moveAutoPlayer()) {
-        lastAutoPlayerMoveTime = curTime;
-      }
-    }
-    
-    ballx += velocityx;
-    bally += velocityy;
-    
-    checkBallOutOfBounds();
-    clearTablePixels();
-    
-
-    // Draw ball
-    setTablePixel(ballx,bally,WHITE);
-    
-    // Draw player left
-    for (int y=positionPlayerLeft-PLAYER_HEIGHT/2; y<=positionPlayerLeft+PLAYER_HEIGHT/2; ++y){
-      setTablePixel(0, y, BLUE);
-    }
-    // Draw player right
-    for (int y=positionPlayerRight-PLAYER_HEIGHT/2; y<=positionPlayerRight+PLAYER_HEIGHT/2; ++y){
-      setTablePixel(FIELD_WIDTH-1, y, YELLOW);
-    }
-    
-    showPixels();
-    boolean dirChanged = false;
-    do{
-      readInput();
-      if (curControl == BTN_EXIT){
-        pongRunning = false;
-        break;
-      }
-      if (curControl != BTN_NONE && !dirChanged){//Can only change direction once per loop
-        dirChanged = true;
-        setPosition();
-      }
-      curTime = millis();
-    } 
-    while ((curTime - prevUpdateTime) <250);//Once enough time  has passed, proceed. The lower this number, the faster the game is
-    prevUpdateTime = curTime;
-  }
-  
-  fadeOut();
-  displayLogo();
-}
-
-void setPosition(){
-  switch(curControl){
-    case BTN_DOWN:
-    case BTN_RIGHT:
-      if(positionPlayerLeft + (PLAYER_HEIGHT-1) / 2 < FIELD_HEIGHT-1){
-        ++positionPlayerLeft;
-      }
-      break;
-    case BTN_UP:     
-    case BTN_LEFT: 
-      if(positionPlayerLeft - PLAYER_HEIGHT / 2 > 0) {
-        --positionPlayerLeft;
-      }
-      break;
-  }
+//  rumbleUntil = 0;
+//  waitUntil = 0;
 }
 
 void checkBallHitByPlayer() {
-  if(ballx == 1) 
+  if(ballx == 1)
   {
-    if(bally == positionPlayerLeft)
+    if(bally == positionPlayerLeft)  // middle of paddle
     {
       velocityx = 1;
-      ballx = 1;
+//      ballx = 1;
       ++ballBounces;
-      rumbleUntil = curTime + 200;
+//      rumbleUntil = curTime + 200;
     } 
-    else if(bally < positionPlayerLeft && bally >= positionPlayerLeft - PLAYER_HEIGHT / 2) 
+    else if(bally < positionPlayerLeft && bally >= positionPlayerLeft - PLAYER_HEIGHT / 2) // upper part of paddle
     {
       velocityx = 1;
-      velocityy = max(-1,velocityy-1); 
-      ballx = 1;
+      velocityy = max(-1,velocityy-1); // or min ?
+//      ballx = 1;
       bally = positionPlayerLeft - PLAYER_HEIGHT / 2-1;
       ++ballBounces;
-      rumbleUntil = curTime + 200;
+//      rumbleUntil = curTime + 200;
     }    
-    else if(bally > positionPlayerLeft && bally <= positionPlayerLeft + (PLAYER_HEIGHT-1) / 2) 
+    else if(bally > positionPlayerLeft && bally <= positionPlayerLeft + (PLAYER_HEIGHT-1) / 2) //lowe par of paddle
     {
       velocityx = 1;
       velocityy = min(1,velocityy+1); 
-      ballx = 1;
+//      ballx = 1;
       bally = positionPlayerLeft + (PLAYER_HEIGHT-1) / 2+1;
       ++ballBounces;
-      rumbleUntil = curTime + 200;
+//      rumbleUntil = curTime + 200;
     }    
   } 
   else if(ballx == FIELD_WIDTH-2)
@@ -1025,14 +1024,14 @@ void checkBallHitByPlayer() {
     if(bally == positionPlayerRight)
     {
       velocityx = -1;
-      ballx = FIELD_WIDTH-2;
+//      ballx = FIELD_WIDTH-2;
       ++ballBounces;
     } 
     else if(bally < positionPlayerRight && bally >= positionPlayerRight - PLAYER_HEIGHT / 2) 
     {
       velocityx = -1;
       velocityy = max(-1,velocityy-1); 
-      ballx = FIELD_WIDTH-2;
+//      ballx = FIELD_WIDTH-2;
       bally = positionPlayerRight - PLAYER_HEIGHT / 2-1;
       ++ballBounces;
     }    
@@ -1040,7 +1039,7 @@ void checkBallHitByPlayer() {
     {
       velocityx = -1;
       velocityy = min(1,velocityy+1); 
-      ballx = FIELD_WIDTH-2;
+//      ballx = FIELD_WIDTH-2;
       bally = positionPlayerRight + (PLAYER_HEIGHT-1) / 2+1;
       ++ballBounces;
     }    
@@ -1053,12 +1052,14 @@ void checkBallOutOfBounds() {
     velocityy = - velocityy;
     //bally = 0;
     bally = 1;
-  } else if(bally > FIELD_HEIGHT-1) 
+  } 
+  else if(bally > FIELD_HEIGHT-1) 
   {
     velocityy = - velocityy;
     bally = FIELD_HEIGHT-2;
     //bally = FIELD_HEIGHT-1;
   } 
+  
   if(ballx < 0) 
   {
     velocityx = - velocityx;
@@ -1067,7 +1068,7 @@ void checkBallOutOfBounds() {
     bally = FIELD_HEIGHT/2;
     ++scorePlayerRight;
     ballBounces = 0;
-    waitUntil = curTime + 2000;
+//    waitUntil = curTime + 2000;
   } 
   else if(ballx > FIELD_WIDTH-1) 
   {
@@ -1077,7 +1078,7 @@ void checkBallOutOfBounds() {
     bally = FIELD_HEIGHT/2;
     ++scorePlayerLeft;
     ballBounces = 0;
-    waitUntil = curTime + 2000;
+//    waitUntil = curTime + 2000;
   } 
 }
 
@@ -1101,7 +1102,90 @@ boolean moveAutoPlayer()
   } 
   return false;
 }
-*/
+
+void setPosition(){
+  switch(curControl){
+    case BTN_DOWN:
+    case BTN_RIGHT:
+      if(positionPlayerLeft + (PLAYER_HEIGHT-1) / 2 < FIELD_HEIGHT-1){
+        ++positionPlayerLeft;
+      }
+      break;
+    case BTN_UP:     
+    case BTN_LEFT: 
+      if(positionPlayerLeft - PLAYER_HEIGHT / 2 > 0) {
+        --positionPlayerLeft;
+      }
+      break;
+  }
+}
+
+void runPong(){
+  boolean dirChanged = false;
+  pongInit();
+  
+  appRunning = true;
+  while(appRunning)
+  {    
+    
+    if (scorePlayerLeft == MAX_SCORE || scorePlayerRight == MAX_SCORE){
+      appRunning = false;
+      break;
+    }
+    
+    checkBallHitByPlayer();
+    
+    if((curTime - lastAutoPlayerMoveTime) > AUTO_PLAYER_SPEED) 
+    {
+      if(moveAutoPlayer()) {
+        lastAutoPlayerMoveTime = curTime;
+      }
+    }
+    
+    ballx += velocityx;
+    bally += velocityy;
+
+//    checkBallHitByPlayer();
+    checkBallOutOfBounds();
+    clearTablePixels();
+    
+
+    // Draw ball
+    setTablePixel(ballx ,bally, WHITE);
+    
+    // Draw player left
+    for (int y=positionPlayerLeft-PLAYER_HEIGHT/2; y<=positionPlayerLeft+PLAYER_HEIGHT/2; ++y){
+      setTablePixel(0, y, BLUE);
+    }
+    // Draw player right
+    for (int y=positionPlayerRight-PLAYER_HEIGHT/2; y<=positionPlayerRight+PLAYER_HEIGHT/2; ++y){
+      setTablePixel(FIELD_WIDTH-1, y, YELLOW);
+    }
+    
+    showPixels();
+    
+    
+    curTime=millis();
+    do{
+      readInput();
+      if (curControl == BTN_EXIT){
+        appRunning = false;
+        break;
+      }
+      if (curControl != BTN_NONE && !dirChanged){//Can only change direction once per loop
+        dirChanged = true;
+        setPosition();
+      }
+      curTime = millis();
+    } 
+    while ((curTime - prevUpdateTime) <250);  //Once enough time  has passed, proceed. The lower this number, the faster the game is
+    prevUpdateTime = curTime;
+  }
+  
+  fadeOut();
+  displayLogo();
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1112,9 +1196,10 @@ boolean moveAutoPlayer()
  * Simple animations
  */
 
+/*
 #define DELAY 60
 
-const uint64_t IMAGES[] = {
+const uint64_t  IMAGES[] = {
   0xf09090f00f09090f,
   0x00f0909ff9090f00,
   0x0000ff9999ff0000,
@@ -1301,13 +1386,16 @@ void runTest(){
   }
   displayLogo();
 }
+
+*/
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
  * Snake game
  */
 
-
+/*
 #define SPEED 500
 
 #define MAXSNAKEPLAYER 4
@@ -1508,7 +1596,9 @@ void die() //Ending, show score
   if( nbPlayerDie == nbPlayer )
   {
     snakeGameOver = true;
+    #ifdef DEBUG
     Serial.println("die");
+    #endif
   }
 }
 
@@ -1550,7 +1640,9 @@ void runSnake(){
 //        if (collide(xs[j][0], xs[j][len], ys[j][0], ys[j][len], SNAKEWIDTH, SNAKEWIDTH, SNAKEWIDTH, SNAKEWIDTH))     
             if (checkCollision(xs[j][0], xs[i][len], ys[j][0], ys[i][len]))
             {
+              #ifdef DEBUG
               Serial.println("\ncollision with other\n");
+              #endif
               isDead[j]++;
               die();
               break;
@@ -1564,7 +1656,9 @@ void runSnake(){
           {
             if (checkCollision(xs[j][0], xs[j][len], ys[j][0], ys[j][len]))
             {
+              #ifdef DEBUG
               Serial.println("\nself collision\n");
+              #endif
               isDead[j]++;
               die();
               break;
@@ -1666,7 +1760,9 @@ void runSnake(){
 
       if ( curControl != BTN_NONE )
       {       
+        #ifdef DEBUG
         Serial.print(curControl);
+        #endif
 
         switch(nbPlayer)
         {
@@ -1674,7 +1770,9 @@ void runSnake(){
         {
           if (  (now-dirChanged)>SPEED &&  (curControl>BTN_START)  )  //Can only change direction once per loop
           {
+            #ifdef DEBUG
             Serial.print("\nP1");
+            #endif
             dirChanged=now; 
             setDirection();
           }
@@ -1703,7 +1801,9 @@ void runSnake(){
         case 3:
         case 4:
         { 
+          #ifdef DEBUG
           Serial.print(curControl);
+          #endif
           if ( (now-dirChanged )>SPEED && ( (curControl&BTN_LEFT) || (curControl&BTN_UP) ) ) //Can only change direction once per loop
           {
 //            Serial.print("P1");
@@ -1760,7 +1860,7 @@ void runSnake(){
 // Set direction from current button state 
 
 
-
+*/
 /////////////////////////////////////////////////////
 
 /* LedTable
@@ -2008,6 +2108,9 @@ void runBricks(){
   scrollText3 (buf, 7, 0, PrintCol);
   displayLogo();
 }
+//////
+
+
 
 
 
@@ -2037,6 +2140,7 @@ void mainLoop(void){
   char* SelectionText[]= { "", "1 Rainbow ", "2 Animation ", "3 Stars ", "4 Vu Meter ", "5 DaftPunk ", "6 Tetris ", "7 Snake ", 
   "8 Pong ", "9 Bricks ", "10 Test ", "11 GameOfLife ", "12 Nb Player ", "13 JinX ", "14 Cylon ", "15 Plasma " };
 
+runPong();
 //runBricks();
 //runNbPlayer();
 //runDP();
@@ -2071,15 +2175,19 @@ void mainLoop(void){
             delay(400);
           } 
           else if ( curControl & BTN_EXIT){
+            #ifdef DEBUG
             Serial.print(curControl);
+            #endif
             oldNbPlayer=nbPlayer;
-            if  (curControl & BTN_LEFT) {nbPlayer=1; Serial.print("NB");}
+            if  (curControl & BTN_LEFT) {nbPlayer=1;}
             else if  (curControl & BTN_UP) nbPlayer=2;
             else if  (curControl & BTN_DOWN) nbPlayer=3;
             else if  (curControl & BTN_RIGHT) nbPlayer=4;
             if (oldNbPlayer != nbPlayer) 
             {
+              #ifdef DEBUG
               Serial.print("PRINT");
+              #endif
               clearTablePixels();
  //             printText3 ("NbPla", 0, 0, PrintCol);
               printNumber (nbPlayer, 4, 5, RED);
@@ -2126,19 +2234,19 @@ void mainLoop(void){
           runDP();
           break;
         case 6:
-//          runTetris();
+          runTetris();
           break;   
         case 7:
-          runSnake();
+//         runSnake();
           break; 
         case 8:
- //         runPong();        
+          runPong();        
           break;  
         case 9:       
           runBricks();
           break;        
         case 10:
-          runTest();
+//          runTest();
           break;                           
         case 11:
 //          runGameofLife();
@@ -2164,7 +2272,472 @@ void mainLoop(void){
   }
 }
 
+/////////////////////////////////////////////////////
+/*
+ * Main code for the Tetris game
+ */
+//Maximum size of bricks. Individual bricks can still be smaller (eg 3x3)
+#define  MAX_BRICK_SIZE    4
+#define  BRICKOFFSET       -1 // Y offset for new bricks
 
+#define  INIT_SPEED        1000//Initial delay in ms between brick drops
+#define  SPEED_STEP        100  // Factor for speed increase between levels, default 10
+#define  LEVELUP           2 //Number of rows before levelup, default 5
+
+// Playing field
+struct Field{
+  uint8_t pix[SHORT_SIDE][LONG_SIDE+1];//Make field one larger so that collision detection with bottom of field can be done in a uniform way
+  unsigned int color[SHORT_SIDE][LONG_SIDE];
+};
+Field field;
+
+//Structure to represent active brick on screen
+struct Brick{
+  boolean enabled;//Brick is disabled when it has landed
+  int xpos,ypos;
+  int yOffset;//Y-offset to use when placing brick at top of field
+  uint8_t siz;
+  uint8_t pix[MAX_BRICK_SIZE][MAX_BRICK_SIZE];
+
+  unsigned int color;
+};
+Brick activeBrick;
+
+//Struct to contain the different choices of blocks
+struct AbstractBrick{
+  int yOffset;//Y-offset to use when placing brick at top of field
+  uint8_t siz;
+  uint8_t pix[MAX_BRICK_SIZE][MAX_BRICK_SIZE];
+};
+
+//Brick "library"
+AbstractBrick brickLib[7] = {
+  {
+      1,//yoffset when adding brick to field
+      4,
+      { {0,0,0,0},
+        {0,1,1,0},
+        {0,1,1,0},
+        {0,0,0,0}
+      }
+  },
+  {
+      0,
+      4,
+      { {0,1,0,0},
+        {0,1,0,0},
+        {0,1,0,0},
+        {0,1,0,0}
+      }
+  },
+  {
+      1,
+      3,
+      { {0,0,0,0},
+        {1,1,1,0},
+        {0,0,1,0},
+        {0,0,0,0}
+      }
+  },
+  {
+      1,
+      3,
+      { {0,0,1,0},
+        {1,1,1,0},
+        {0,0,0,0},
+        {0,0,0,0}
+      }
+  },
+  {
+      1,
+      3,
+      { {0,0,0,0},
+        {1,1,1,0},
+        {0,1,0,0},
+        {0,0,0,0}
+      }
+  },
+  {
+      1,
+      3,
+      { {0,1,1,0},
+        {1,1,0,0},
+        {0,0,0,0},
+        {0,0,0,0}
+      }
+  },
+  {
+      1,
+      3,
+      { {1,1,0,0},
+        {0,1,1,0},
+        {0,0,0,0},
+        {0,0,0,0}
+      }
+  }
+};
+
+uint16_t brickSpeed;
+uint8_t nbRowsThisLevel;
+uint16_t nbRowsTotal;
+
+boolean tetrisGameOver;
+
+void tetrisInit(){
+  clearField();
+  brickSpeed = INIT_SPEED;
+  nbRowsThisLevel = 0;
+  nbRowsTotal = 0;
+  tetrisGameOver = false;
+  
+  newActiveBrick();
+}
+
+boolean tetrisRunning = false;
+void runTetris(void){
+  tetrisInit();
+  
+  unsigned long prevUpdateTime = 0;
+  
+  tetrisRunning = true;
+  while(tetrisRunning){
+    unsigned long curTime;
+    do{
+      readInput();
+      if (curControl & BTN_UP) delay (400);
+      if (curControl & BTN_DOWN) delay (100);
+      if (curControl & BTN_LEFT || curControl & BTN_RIGHT) delay (75);
+      if (curControl != BTN_NONE){
+        playerControlActiveBrick();
+        printField();
+      }
+      if (tetrisGameOver) break;
+ 
+      curTime = millis();
+    } while ((curTime - prevUpdateTime) < brickSpeed);//Once enough time  has passed, proceed. The lower this number, the faster the game is
+    prevUpdateTime = curTime;
+  
+    if (tetrisGameOver){
+      fadeOut();
+      char buf[4];
+      int len = sprintf(buf, "%i", nbRowsTotal);
+      
+//      scrollTextBlocked(buf,len,WHITE);
+      scrollText3 (buf, 7, 0, PrintCol);
+      
+      //Disable loop and exit to main menu of led table
+      tetrisRunning = false;
+      break;
+    }
+  
+    //If brick is still "on the loose", then move it down by one
+    if (activeBrick.enabled){
+      shiftActiveBrick(DIR_DOWN);
+    } else {
+      //Active brick has "crashed", check for full lines
+      //and create new brick at top of field
+      checkFullLines();
+      newActiveBrick();
+      prevUpdateTime = millis();//Reset update time to avoid brick dropping two spaces
+    }
+    printField();
+  }
+  
+  fadeOut();
+  displayLogo();
+}
+
+void playerControlActiveBrick(){
+  switch(curControl){
+    case BTN_LEFT:
+      shiftActiveBrick(DIR_LEFT);
+      break;
+    case BTN_RIGHT:
+      shiftActiveBrick(DIR_RIGHT);
+      break;
+    case BTN_DOWN:
+      shiftActiveBrick(DIR_DOWN);
+      break;
+    case BTN_UP:
+      rotateActiveBrick();
+      break;
+    case BTN_EXIT:
+      tetrisRunning = false;
+      break;
+  }
+}
+
+void printField(){
+  int x,y;
+  for (x=0;x<SHORT_SIDE;x++){
+    for (y=0;y<LONG_SIDE;y++){
+      uint8_t activeBrickPix = 0;
+      if (activeBrick.enabled){//Only draw brick if it is enabled
+        //Now check if brick is "in view"
+        if ((x>=activeBrick.xpos) && (x<(activeBrick.xpos+(activeBrick.siz)))
+            && (y>=activeBrick.ypos) && (y<(activeBrick.ypos+(activeBrick.siz)))){
+          activeBrickPix = (activeBrick.pix)[x-activeBrick.xpos][y-activeBrick.ypos];
+        }
+      }
+      if (field.pix[x][y] == 1){
+        setTablePixelv(x,y, field.color[x][y]);
+      } else if (activeBrickPix == 1){
+        setTablePixelv(x,y, activeBrick.color);
+      } else {
+        setTablePixelv(x,y, 0x000000);
+      }
+    }
+  }
+  showPixels();
+}
+
+/* *** Game functions *** */
+
+void newActiveBrick(){
+//  uint8_t selectedBrick = 3;
+  uint8_t selectedBrick = random(7);
+  uint8_t selectedColor = random(COLORLIB);
+
+  //Set properties of brick
+  activeBrick.siz = brickLib[selectedBrick].siz;
+  activeBrick.yOffset = brickLib[selectedBrick].yOffset;
+  activeBrick.xpos = SHORT_SIDE/2 - activeBrick.siz/2;
+  activeBrick.ypos = BRICKOFFSET-activeBrick.yOffset;
+  activeBrick.enabled = true;
+  
+  //Set color of brick
+  activeBrick.color = colorLib[selectedColor];
+  //activeBrick.color = colorLib[1];
+  
+  //Copy pix array of selected Brick
+  uint8_t x,y;
+  for (y=0;y<MAX_BRICK_SIZE;y++){
+    for (x=0;x<MAX_BRICK_SIZE;x++){
+      activeBrick.pix[x][y] = (brickLib[selectedBrick]).pix[x][y];
+    }
+  }
+  
+  //Check collision, if already, then game is over
+  if (checkFieldCollision(&activeBrick)){
+    tetrisGameOver = true;
+  }
+}
+
+//Check collision between bricks in the field and the specified brick
+boolean checkFieldCollision(struct Brick* brick){
+  uint8_t bx,by;
+  uint8_t fx,fy;
+  for (by=0;by<MAX_BRICK_SIZE;by++){
+    for (bx=0;bx<MAX_BRICK_SIZE;bx++){
+      fx = (*brick).xpos + bx;
+      fy = (*brick).ypos + by;
+      if (( (*brick).pix[bx][by] == 1) 
+            && ( field.pix[fx][fy] == 1)){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+//Check collision between specified brick and all sides of the playing field
+boolean checkSidesCollision(struct Brick* brick){
+  //Check vertical collision with sides of field
+  uint8_t bx,by;
+  uint8_t fx,fy;
+  for (by=0;by<MAX_BRICK_SIZE;by++){
+    for (bx=0;bx<MAX_BRICK_SIZE;bx++){
+      if ( (*brick).pix[bx][by] == 1){
+        fx = (*brick).xpos + bx;//Determine actual position in the field of the current pix of the brick
+        fy = (*brick).ypos + by;
+        if (fx<0 || fx>=SHORT_SIDE){
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+Brick tmpBrick;
+
+void rotateActiveBrick(){
+  //Copy active brick pix array to temporary pix array
+  uint8_t x,y;
+  for (y=0;y<MAX_BRICK_SIZE;y++){
+    for (x=0;x<MAX_BRICK_SIZE;x++){
+      tmpBrick.pix[x][y] = activeBrick.pix[x][y];
+    }
+  }
+  tmpBrick.xpos = activeBrick.xpos;
+  tmpBrick.ypos = activeBrick.ypos;
+  tmpBrick.siz = activeBrick.siz;
+  
+  //Depending on size of the active brick, we will rotate differently
+  if (activeBrick.siz == 3){
+    //Perform rotation around center pix
+    tmpBrick.pix[0][0] = activeBrick.pix[0][2];
+    tmpBrick.pix[0][1] = activeBrick.pix[1][2];
+    tmpBrick.pix[0][2] = activeBrick.pix[2][2];
+    tmpBrick.pix[1][0] = activeBrick.pix[0][1];
+    tmpBrick.pix[1][1] = activeBrick.pix[1][1];
+    tmpBrick.pix[1][2] = activeBrick.pix[2][1];
+    tmpBrick.pix[2][0] = activeBrick.pix[0][0];
+    tmpBrick.pix[2][1] = activeBrick.pix[1][0];
+    tmpBrick.pix[2][2] = activeBrick.pix[2][0];
+    //Keep other parts of temporary block clear
+    tmpBrick.pix[0][3] = 0;
+    tmpBrick.pix[1][3] = 0;
+    tmpBrick.pix[2][3] = 0;
+    tmpBrick.pix[3][3] = 0;
+    tmpBrick.pix[3][2] = 0;
+    tmpBrick.pix[3][1] = 0;
+    tmpBrick.pix[3][0] = 0;
+    
+  } else if (activeBrick.siz == 4){
+    //Perform rotation around center "cross"
+    tmpBrick.pix[0][0] = activeBrick.pix[0][3];
+    tmpBrick.pix[0][1] = activeBrick.pix[1][3];
+    tmpBrick.pix[0][2] = activeBrick.pix[2][3];
+    tmpBrick.pix[0][3] = activeBrick.pix[3][3];
+    tmpBrick.pix[1][0] = activeBrick.pix[0][2];
+    tmpBrick.pix[1][1] = activeBrick.pix[1][2];
+    tmpBrick.pix[1][2] = activeBrick.pix[2][2];
+    tmpBrick.pix[1][3] = activeBrick.pix[3][2];
+    tmpBrick.pix[2][0] = activeBrick.pix[0][1];
+    tmpBrick.pix[2][1] = activeBrick.pix[1][1];
+    tmpBrick.pix[2][2] = activeBrick.pix[2][1];
+    tmpBrick.pix[2][3] = activeBrick.pix[3][1];
+    tmpBrick.pix[3][0] = activeBrick.pix[0][0];
+    tmpBrick.pix[3][1] = activeBrick.pix[1][0];
+    tmpBrick.pix[3][2] = activeBrick.pix[2][0];
+    tmpBrick.pix[3][3] = activeBrick.pix[3][0];
+  } else {
+    Serial.println("Brick size error");
+  }
+  
+  //Now validate by checking collision.
+  //Collision possibilities:
+  //      -Brick now sticks outside field
+  //      -Brick now sticks inside fixed bricks of field
+  //In case of collision, we just discard the rotated temporary brick
+  if ((!checkSidesCollision(&tmpBrick)) && (!checkFieldCollision(&tmpBrick))){
+    //Copy temporary brick pix array to active pix array
+    for (y=0;y<MAX_BRICK_SIZE;y++){
+      for (x=0;x<MAX_BRICK_SIZE;x++){
+        activeBrick.pix[x][y] = tmpBrick.pix[x][y];
+      }
+    }
+  }
+}
+
+//Shift brick left/right/down by one if possible
+void shiftActiveBrick(int dir){
+  //Change position of active brick (no copy to temporary needed)
+  if (dir == DIR_LEFT){
+    activeBrick.xpos--;
+  } else if (dir == DIR_RIGHT){
+    activeBrick.xpos++;
+  } else if (dir == DIR_DOWN){
+    activeBrick.ypos++;
+  }
+  
+  //Check position of active brick
+  //Two possibilities when collision is detected:
+  //    -Direction was LEFT/RIGHT, just revert position back
+  //    -Direction was DOWN, revert position and fix block to field on collision
+  //When no collision, keep activeBrick coordinates
+  if ((checkSidesCollision(&activeBrick)) || (checkFieldCollision(&activeBrick))){
+    //Serial.println("coll");
+    if (dir == DIR_LEFT){
+      activeBrick.xpos++;
+    } else if (dir == DIR_RIGHT){
+      activeBrick.xpos--;
+    } else if (dir == DIR_DOWN){
+      activeBrick.ypos--;//Go back up one
+      addActiveBrickToField();
+      activeBrick.enabled = false;//Disable brick, it is no longer moving
+    }
+  }
+}
+
+//Copy active pixels to field, including color
+void addActiveBrickToField(){
+  uint8_t bx,by;
+  uint8_t fx,fy;
+  for (by=0;by<MAX_BRICK_SIZE;by++){
+    for (bx=0;bx<MAX_BRICK_SIZE;bx++){
+      fx = activeBrick.xpos + bx;
+      fy = activeBrick.ypos + by;
+      
+      if (fx>=0 && fy>=0 && fx<SHORT_SIDE && fy<LONG_SIDE && activeBrick.pix[bx][by]){//Check if inside playing field
+        //field.pix[fx][fy] = field.pix[fx][fy] || activeBrick.pix[bx][by];
+        field.pix[fx][fy] = activeBrick.pix[bx][by];
+        field.color[fx][fy] = activeBrick.color;
+      }
+    }
+  }
+}
+
+//Move all pix from te field above startRow down by one. startRow is overwritten
+void moveFieldDownOne(uint8_t startRow){
+  if (startRow == 0){//Topmost row has nothing on top to move...
+    return;
+  }
+  uint8_t x,y;
+  for (y=startRow-1; y>0; y--){
+    for (x=0;x<SHORT_SIDE; x++){
+      field.pix[x][y+1] = field.pix[x][y];
+      field.color[x][y+1] = field.color[x][y];
+    }
+  }
+}
+
+void checkFullLines(){
+  int x,y;
+  int minY = 0;
+  for (y=(LONG_SIDE-1); y>=minY; y--){
+    uint8_t rowSum = 0;
+    for (x=0; x<SHORT_SIDE; x++){
+      rowSum = rowSum + (field.pix[x][y]);
+    }
+    if (rowSum>=SHORT_SIDE){
+      //Found full row, animate its removal
+      for (x=0;x<SHORT_SIDE; x++){
+        field.pix[x][y] = 0;
+        printField();
+        delay(100);
+      }
+      //Move all upper rows down by one
+      moveFieldDownOne(y);
+      y++; minY++;
+      printField();
+      delay(100);
+      
+      nbRowsThisLevel++; nbRowsTotal++;
+      if (nbRowsThisLevel >= LEVELUP){
+        nbRowsThisLevel = 0;
+        brickSpeed = brickSpeed - SPEED_STEP;
+        if (brickSpeed<200){
+          brickSpeed = 200;
+        }
+      }
+    }
+  }
+}
+
+void clearField(){
+  uint8_t x,y;
+  for (y=0;y<LONG_SIDE;y++){
+    for (x=0;x<SHORT_SIDE;x++){
+      field.pix[x][y] = 0;
+      field.color[x][y] = 0;
+    }
+  }
+  for (x=0;x<SHORT_SIDE;x++){//This last row is invisible to the player and only used for the collision detection routine
+    field.pix[x][LONG_SIDE] = 1;
+  }
+}
 
 /////////////////////////////////////////////////////
 

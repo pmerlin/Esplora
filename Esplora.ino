@@ -1,7 +1,7 @@
 //#include <Arduino.h>
 //#define ADA
 
-//#define TABLE
+#define TABLE
 
 #include <Esplora.h>  // Try to use hardware but if not (buttons) use Esplora library function
 #include <SPI.h>
@@ -77,8 +77,9 @@ boolean monitor = false;
 #define GreenYellow     0xAFE5      /* 173, 255,  47 */
 #define Pink            0xF81F
 
-uint16_t colorLib[3] = {YELLOW, BLUE, WHITE};
+uint16_t colorLib[7] = {YELLOW, BLUE, WHITE, RED, GREEN, Pink, Orange};
 uint16_t PrintCol[2]= {YELLOW, RED};
+#define COLORLIB sizeof(colorLib)
 //SOUND
 #define sound_pin 6 // Direct sound on Esplora
 
@@ -369,7 +370,8 @@ void initPixelsv(){
 
 void dimLeds(float factor){
   //Reduce brightness of all LEDs, typical factor is 0.97
-  for (uint8_t n=0; n<(FIELD_WIDTH*FIELD_HEIGHT); n++)
+//  for (uint8_t n=0; n<(FIELD_WIDTH*FIELD_HEIGHT); n++)
+  for (uint8_t n=0; n<1; n++)
   {
     uint16_t curColor = getPixel(n);
 
@@ -377,15 +379,20 @@ void dimLeds(float factor){
     byte  b = ( curColor >>11 );
     byte  g = ((curColor & 0x003F)>>5);
     byte  r = (curColor & 0x001F);
+    char tmp[20];
+    sprintf(tmp, "RGBB %d %d %d\n",r,g,b);
+    Serial.println(tmp);
     //Reduce brightness
     r = r*factor;
     g = g*factor;
     b = b*factor;
+    sprintf(tmp, "RGBB %d %d %d\n",r,g,b);
+    Serial.println(tmp);
     //Pack into single variable again
     curColor = RGB(r,g,b);
     //Set led again 
     setPixel(n,curColor);  
-    }
+  }
 }
 
 
@@ -544,6 +551,8 @@ void setup() {
   EsploraTFT.drawBitmap(3,3,pong,89,24,GREEN);
   EsploraTFT.drawBitmap(10,30,game,75,26,RED);
   delay(2000);
+
+  Serial.begin(9600);
   
   initPixels();
   delay(1000);
@@ -2487,7 +2496,7 @@ void printField(){
 void newActiveBrick(){
 //  uint8_t selectedBrick = 3;
   uint8_t selectedBrick = random(7);
-  uint8_t selectedColor = random(3);
+  uint8_t selectedColor = random(COLORLIB);
 
   //Set properties of brick
   activeBrick.siz = brickLib[selectedBrick].siz;
