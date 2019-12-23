@@ -1,10 +1,18 @@
 //#include <Arduino.h>
 //#define ADA
+//#define EXPLORA
 
 //#define TABLE
 
+
+#ifdef ESPLORA
 #include <Esplora.h>  // Try to use hardware but if not (buttons) use Esplora library function
 #include <SPI.h>
+#else
+#include "FastLED.h"
+#endif
+
+
 //#include <EEPROM.h>
 
 #ifdef ADA
@@ -21,11 +29,13 @@
 #define DECAL 3
 #define SCALE 8
 
+#ifdef ESPLORA
 typedef uint16_t CRGB;
 // SPI pins for Esplora (Arduino Leonardo style numbering)
 #define mosi 16
 #define miso 14
 #define sclk 15
+#endif
 
 //SCREEN
 
@@ -43,8 +53,11 @@ long lastMillis;
 boolean monitor = false;
 
 //#define RGB(r, g, b) (((r&0xF8)<<8)|((g&0xFC)<<3)|(b>>3))
+#ifdef ESPLORA
 #define RGB(r, g, b) (((b&0xF8)<<8)|((g&0xFC)<<3)|(r>>3))
+#endif
 
+#ifdef ESPLORA
 //uint16_t color565(uint8_t r, uint8_t g, uint8_t b) { return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3); }
 #define BLACK   0x0000
 #define BLUE    0xF800
@@ -76,11 +89,29 @@ boolean monitor = false;
 #define Orange          0xFD20      /* 255, 165,   0 */
 #define GreenYellow     0xAFE5      /* 173, 255,  47 */
 #define Pink            0xF81F
-
 uint16_t colorLib[3] = {YELLOW, BLUE, WHITE};
 uint16_t PrintCol[2]= {YELLOW, RED};
 //SOUND
 #define sound_pin 6 // Direct sound on Esplora
+
+#else
+
+//BGR
+#define  BLACK  0x000000
+#define  GREEN  0x00FF00
+#define  LGREEN  0x007700
+#define  RED    0xFF0000
+#define  BLUE   0x0000FF
+#define  YELLOW 0xFFFF00
+#define  LBLUE  0x00FFFF
+#define  PURPLE 0xFF00FF
+#define  LPURPLE 0x770077
+#define  WHITE  0xFFFFFF
+#define  LWHITE 0x777777
+uint32_t colorLib[3] = {YELLOW, BLUE, WHITE};
+uint32_t PrintCol[2] = {YELLOW, RED};
+#endif
+
 
 //BUTTONS (not used on Esplora as buttons must be read using library function)
 // #define Rbtn_pin 1
@@ -106,6 +137,37 @@ uint16_t PrintCol[2]= {YELLOW, RED};
 #define  BTN_RIGHT2 512
 
 
+//#define WEMOS 
+#ifdef WEMOS
+#define FAST_LED_DATA_PIN  D6
+#define L_pin D2
+#define U_pin D3
+#define D_pin D4
+#define R_pin D5
+
+#define E_pin D8
+#define S_pin D9
+
+#define L2_pin D10
+#define U2_pin D11
+#define D2_pin D12
+#define R2_pin D13
+#else
+#define FAST_LED_DATA_PIN  6
+#define L_pin 2
+#define U_pin 3
+#define D_pin 4
+#define R_pin 5
+
+#define E_pin 8
+#define S_pin 9
+
+#define L2_pin 10
+#define U2_pin 11
+#define D2_pin 12
+#define R2_pin 13
+#endif
+
 //ACCELEROMETER (mod for Esplora)
 //int acc_avgX, acc_avgY, acc_avgZ;
 #define acc_pinX 1  // A5
@@ -118,8 +180,13 @@ uint16_t PrintCol[2]= {YELLOW, RED};
 #define SHORT_SIDE 10
 
 #define  NUM_PIXELS    FIELD_WIDTH*FIELD_HEIGHT
-#ifdef TABLE
-uint16_t leds[NUM_PIXELS];
+
+#ifdef ESPLORA
+  #ifdef TABLE
+  uint16_t leds[NUM_PIXELS];
+  #endif
+#else
+  CRGB leds[NUM_PIXELS];
 #endif
 
 uint16_t curControl = BTN_NONE;
@@ -133,6 +200,7 @@ boolean appRunning = false;
 void readInput(){
   curControl = BTN_NONE;
 
+#ifdef ESPLORA
   if ( Esplora.readJoystickSwitch() ==0 )
     curControl += BTN_START;
   
@@ -148,9 +216,35 @@ void readInput(){
     curControl += BTN_RIGHT;
   if (Esplora.readButton(SWITCH_DOWN) == LOW)
     curControl += BTN_DOWN;
+#else
+  if (!digitalRead(S_pin) )
+    curControl += BTN_START;
+  if (!digitalRead(E_pin))
+    curControl += BTN_EXIT;
+    
+  if (!digitalRead(L_pin))
+    curControl += BTN_LEFT;
+  if (!digitalRead(U_pin))
+    curControl += BTN_UP;
+    
+  if (!digitalRead(R_pin))
+    curControl += BTN_RIGHT;
+  if (!digitalRead(D_pin))
+    curControl += BTN_DOWN;
+        
+  if (!digitalRead(L2_pin))
+    curControl += BTN_LEFT2;
+  if (!digitalRead(U2_pin))
+    curControl += BTN_UP2;
+    
+  if (!digitalRead(R2_pin))
+    curControl += BTN_RIGHT2;
+  if (!digitalRead(D2_pin))
+    curControl += BTN_DOWN2;
+#endif
 }        
 
-void setPixel(uint8_t n, uint16_t color){
+void setPixel(uint8_t n, unsigned long color){
   #ifdef TABLE
   leds[n] = color;
   #endif
@@ -258,20 +352,22 @@ return 0;
 
 
 void clearTablePixels(){
+#ifdef ESPLORA
 #ifdef ADA  
   tft.fillScreen(BLACK);
 #else
   EsploraTFT.fillScreen(BLACK);
 #endif
-/*
+#else
+
   for (int n=0; n<FIELD_WIDTH*FIELD_HEIGHT; n++){
     setPixel(n,0);
   }
-*/
+#endif
 }
 
 void showPixels(){
-//  FastLED.show();
+  FastLED.show();
 }
 /*
 void testMatrix() {
@@ -288,6 +384,11 @@ void testMatrix() {
 }
 */
 void initPixels(){
+
+#ifndef ESPLORA
+  FastLED.addLeds<FAST_LED_CHIPSET, FAST_LED_DATA_PIN>(leds, NUM_PIXELS).setCorrection(TypicalSMD5050);
+  FastLED.setBrightness(BRIGHTNESS);
+#endif
 
 #ifdef DEBUG
 #ifdef TABLE
@@ -527,6 +628,8 @@ static const unsigned char game []PROGMEM ={
 };
 
 void setup() {
+
+#ifdef ESPLORA
   // put your setup code here, to run once:
   // initialize a ST7735R TFT
 #ifdef ADA  
@@ -544,12 +647,34 @@ void setup() {
   EsploraTFT.drawBitmap(3,3,pong,89,24,GREEN);
   EsploraTFT.drawBitmap(10,30,game,75,26,RED);
   delay(2000);
+
+#else
+
+  Serial.begin(115200);
+  pinMode(L_pin,INPUT_PULLUP);
+  pinMode(R_pin,INPUT_PULLUP);
+  pinMode(U_pin,INPUT_PULLUP);
+  pinMode(D_pin,INPUT_PULLUP);
+  pinMode(S_pin,INPUT_PULLUP);
+  pinMode(E_pin,INPUT_PULLUP);
+  pinMode(L2_pin,INPUT_PULLUP);
+  pinMode(R2_pin,INPUT_PULLUP);
+  pinMode(U2_pin,INPUT_PULLUP);
+  pinMode(D2_pin,INPUT_PULLUP);
+
+#endif
+
+  #ifdef ORIENTATION_HORIZONTAL
+    initPixels();
+  #else
+    initPixelsv();
+  #endif
+  showPixels();
   
-  initPixels();
-  delay(1000);
 //  testMatrix();
   displayLogo();
   delay(1000);
+  showPixels();
 //  ScoreSetup();
 }
 
