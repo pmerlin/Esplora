@@ -11,8 +11,8 @@
 
 #define WendyFont3x5 Wendy3x5
 
-//static uint8_t Wendy3x5[] PROGMEM = {
-static uint8_t Wendy3x5[] = {
+static const uint8_t Wendy3x5[] PROGMEM = {
+//static const uint8_t Wendy3x5[] = {
     
     // font data
         0x00, 0x00, 0x00,  // (space)
